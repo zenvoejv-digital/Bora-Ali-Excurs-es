@@ -1,0 +1,113 @@
+/* Bora Ali Excursões — estilos do site */
+*,*::before,*::after{box-sizing:border-box}
+img{max-width:100%}
+body{margin:0;background:#FFFFFF}
+a{color:#0A4D8C}a:hover{color:#D9650F}
+html{scroll-behavior:smooth}
+.navlinks{display:flex}
+@media (max-width:860px){.navlinks{display:none}}
+.hero-bg{background-color:#E8741C;background-image:linear-gradient(90deg,#06284D 0%,#06284D 36%,rgba(6,40,77,0.55) 52%,rgba(6,40,77,0) 68%),url(../img/hero-por-do-sol.jpg);background-size:100% 100%,auto 125%;background-position:left center,right -40px center;background-repeat:no-repeat}
+@media (max-width:860px){.hero-bg{background-image:linear-gradient(180deg,rgba(6,40,77,0.9),rgba(6,40,77,0.82)),url(../img/hero-por-do-sol.jpg);background-size:100% 100%,cover;background-position:center,center}}
+.footer-bg{background-color:#06284D;background-image:linear-gradient(180deg,rgba(6,40,77,0.92),rgba(6,40,77,0.97)),url(../img/ceu-aviao.jpg);background-size:cover;background-position:center}
+.tile{transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
+.tile:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(10,77,140,0.18);border-color:#F47B20}
+.card{transition:transform .25s ease, box-shadow .25s ease}
+.card:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(10,77,140,0.16)}
+.btn{transition:transform .2s ease, filter .2s ease}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.05)}
+
+/* animações das ilustrações */
+@keyframes fly{0%{transform:translate(-60px,18px) rotate(-6deg)}50%{transform:translate(110px,-6px) rotate(0deg)}100%{transform:translate(290px,18px) rotate(6deg)}}
+@keyframes wave{from{transform:translateX(0)}to{transform:translateX(-200px)}}
+@keyframes sunPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{0%{transform:translateX(-40px)}100%{transform:translateX(240px)}}
+@keyframes drive{0%{transform:translateX(-120px)}100%{transform:translateX(300px)}}
+@keyframes road{to{transform:translateX(-40px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.a-fly{animation:fly 5s ease-in-out infinite}
+.a-wave{animation:wave 4s linear infinite}
+.a-wave2{animation:wave 6s linear infinite reverse}
+.a-sun{animation:sunPulse 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.a-spin{animation:spin 9s linear infinite;transform-box:fill-box;transform-origin:center}
+.a-wheel{animation:spin .8s linear infinite;transform-box:fill-box;transform-origin:center}
+.a-drift{animation:drift 12s linear infinite}
+.a-drift2{animation:drift 18s linear infinite;animation-delay:-8s}
+.a-drive{animation:drive 7s linear infinite}
+.a-road{animation:road 1s linear infinite}
+.a-bob{animation:bob .5s ease-in-out infinite}
+.a-float{animation:floaty 4s ease-in-out infinite}
+
+/* entradas diferentes por seção, ao rolar a página */
+@keyframes inZoom{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes inUp{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:none}}
+@keyframes inPop{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.05)}100%{opacity:1;transform:none}}
+@keyframes inLeft{from{opacity:0;transform:translateX(-80px)}to{opacity:1;transform:none}}
+@keyframes inFlip{from{opacity:0;transform:perspective(800px) rotateX(55deg)}to{opacity:1;transform:none}}
+@supports (animation-timeline: view()){
+.r-zoom,.r-up,.r-pop,.r-left,.r-flip{animation-timing-function:ease-out;animation-fill-mode:both;animation-timeline:view();animation-range:entry 0% cover 28%}
+.r-zoom{animation-name:inZoom}.r-up{animation-name:inUp}.r-pop{animation-name:inPop}.r-left{animation-name:inLeft}.r-flip{animation-name:inFlip}
+}
+
+/* cenas dos destinos */
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes rock{0%,100%{transform:rotate(-5deg) translateY(0)}50%{transform:rotate(5deg) translateY(-3px)}}
+@keyframes steam{0%{transform:translate(0,0);opacity:.9}100%{transform:translate(5px,-26px);opacity:0}}
+@keyframes splash{0%{transform:translate(0,0) scale(.4);opacity:0}30%{opacity:1}100%{transform:translate(0,-18px) scale(1);opacity:0}}
+@keyframes flicker{0%{transform:scale(.88,.95)}100%{transform:scale(1.08,1.1)}}
+@keyframes flag{0%{transform:skewY(-10deg) scaleX(.9)}100%{transform:skewY(10deg) scaleX(1.05)}}
+@keyframes fall{to{stroke-dashoffset:-24}}
+@keyframes twinkle{0%{opacity:.2}100%{opacity:1}}
+@keyframes up{0%,100%{transform:translateY(0)}50%{transform:translateY(12px)}}
+@keyframes squeeze{0%,100%{transform:scaleX(.8)}50%{transform:scaleX(1.08)}}
+@keyframes ride{0%{transform:translate(46px,40px);opacity:1}45%{transform:translate(105px,76px)}88%{transform:translate(186px,96px);opacity:1}100%{transform:translate(194px,100px);opacity:0}}
+@keyframes ride2{0%{transform:translate(232px,38px);opacity:1}25%{transform:translate(196px,56px)}50%{transform:translate(160px,78px)}75%{transform:translate(120px,94px)}92%{transform:translate(84px,104px);opacity:1}100%{transform:translate(80px,106px);opacity:0}}
+@keyframes cable{0%,100%{transform:translate(60px,84px)}50%{transform:translate(112px,56px)}}
+@keyframes cable2{0%{transform:translate(30px,112px)}100%{transform:translate(280px,38px)}}
+@keyframes coaster{0%{transform:translate(10px,100px)}20%{transform:translate(70px,46px)}40%{transform:translate(120px,100px)}60%{transform:translate(170px,60px)}80%{transform:translate(220px,100px)}100%{transform:translate(300px,100px)}}
+@keyframes glide{0%{transform:translate(40px,58px)}50%{transform:translate(170px,40px)}100%{transform:translate(330px,62px)}}
+@keyframes surf{0%,100%{transform:translate(105px,82px) rotate(-6deg)}50%{transform:translate(145px,72px) rotate(4deg)}}
+@keyframes birdfly{0%{transform:translate(-30px,60px)}100%{transform:translate(320px,36px)}}
+.s-sway{animation:sway 3s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.s-rock{animation:rock 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.s-steam{animation:steam 2.4s ease-out infinite}
+.s-splash{animation:splash 1.2s ease-out infinite}
+.s-flicker{animation:flicker .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+.s-flag{animation:flag .8s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:0 50%}
+.s-fall{animation:fall .6s linear infinite}
+.s-twinkle{animation:twinkle 1.4s ease-in-out infinite alternate}
+.s-up{animation:up 1.6s ease-in-out infinite}
+.s-squeeze{animation:squeeze 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}
+.s-spin4{animation:spin 4s linear infinite;transform-box:fill-box;transform-origin:50% 50%}
+.s-neck{animation:sway 3.5s ease-in-out infinite;transform-box:fill-box;transform-origin:10% 100%}
+.s-bell{animation:sway 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 0}
+.s-bob{animation:up 2s ease-in-out infinite;transform-box:fill-box}
+.s-ride{animation:ride 2.6s ease-in infinite}
+.s-ride2{animation:ride2 3s ease-in infinite}
+.s-cable{animation:cable 6s ease-in-out infinite}
+.s-cable2{animation:cable2 6s linear infinite}
+.s-coaster{animation:coaster 4s linear infinite}
+.s-glide{animation:glide 9s linear infinite}
+.s-surf{animation:surf 3s ease-in-out infinite}
+.s-bird{animation:birdfly 8s linear infinite}
+.f-label{display:block;font-size:14px;font-weight:600;color:#0F1B2D;margin-bottom:6px}
+.f-input{width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;color:#0F1B2D;background:#FFFFFF;border:1.5px solid #C9D8E8;border-radius:12px;padding:12px 14px;min-height:48px;outline:none;transition:border-color .2s, box-shadow .2s}
+.f-input:focus{border-color:#0A4D8C;box-shadow:0 0 0 3px rgba(10,77,140,0.15)}
+.f-hint{font-size:13px;color:#55657A;margin-top:4px}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.drawer{animation:slideIn .35s ease-out}
+.backdrop{animation:fadeIn .25s ease-out}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+[hidden]{display:none !important}
+body.no-scroll{overflow:hidden}
+
+
+/* ajustes para celular */
+html,body{overflow-x:clip}
+@media (max-width:520px){
+  .brand-name{font-size:22px !important}
+  .brand-logo{width:44px !important;height:44px !important}
+  .header-cta{padding:10px 14px !important;font-size:14px !important}
+}
