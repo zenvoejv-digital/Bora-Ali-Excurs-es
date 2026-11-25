@@ -6,8 +6,17 @@ a{color:#0A4D8C}a:hover{color:#D9650F}
 html{scroll-behavior:smooth}
 .navlinks{display:flex}
 @media (max-width:860px){.navlinks{display:none}}
-.hero-bg{background-color:#E8741C;background-image:linear-gradient(90deg,#06284D 0%,#06284D 36%,rgba(6,40,77,0.55) 52%,rgba(6,40,77,0) 68%),url(../img/hero-por-do-sol.jpg);background-size:100% 100%,auto 125%;background-position:left center,right -40px center;background-repeat:no-repeat}
-@media (max-width:860px){.hero-bg{background-image:linear-gradient(180deg,rgba(6,40,77,0.9),rgba(6,40,77,0.82)),url(../img/hero-por-do-sol.jpg);background-size:100% 100%,cover;background-position:center,center}}
+.hero-bg{position:relative;overflow:hidden;isolation:isolate;background-color:#06284D}
+.hero-bg > *{position:relative;z-index:2}
+.hero-bg > .hero-art{position:absolute;z-index:0;top:50%;right:-40px;height:125%;aspect-ratio:1/1;transform:translateY(-50%)}
+.hero-bg > .hero-shade{position:absolute;z-index:1;inset:0;background:linear-gradient(90deg,#06284D 0%,#06284D 36%,rgba(6,40,77,0.55) 52%,rgba(6,40,77,0) 68%)}
+.hero-art img{position:absolute;display:block;max-width:none}
+.hero-art .hero-clean{left:0;top:0;width:100%;height:100%}
+.hero-art .hero-plane{left:32.78%;top:24.96%;width:35.09%;animation:heroPlane 7s ease-in-out infinite}
+.hero-art .hero-boat{left:25.52%;top:53.43%;width:52.23%;transform-origin:50% 70%;animation:heroBoat 4.5s ease-in-out infinite}
+@keyframes heroPlane{0%,100%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(2%,-5%) rotate(-1.5deg)}50%{transform:translate(4%,-9%) rotate(-2.5deg)}75%{transform:translate(2%,-4%) rotate(-1deg)}}
+@keyframes heroBoat{0%,100%{transform:rotate(-1.6deg) translateY(0)}50%{transform:rotate(1.6deg) translateY(-2.5%)}}
+@media (max-width:860px){.hero-bg > .hero-art{right:50%;height:115%;transform:translate(50%,-50%)}.hero-bg > .hero-shade{background:linear-gradient(180deg,rgba(6,40,77,0.9),rgba(6,40,77,0.82))}}
 .footer-bg{background-color:#06284D;background-image:linear-gradient(180deg,rgba(6,40,77,0.92),rgba(6,40,77,0.97)),url(../img/ceu-aviao.jpg);background-size:cover;background-position:center}
 .tile{transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
 .tile:hover{transform:translateY(-6px);box-shadow:0 18px 36px rgba(10,77,140,0.18);border-color:#F47B20}
