@@ -30,7 +30,9 @@ var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 
   'Link da autorização', 'Autorização entregue'];
 // colunas (1 = A) usadas pelas autorizações
 var COL_AUT = 28, COL_VINC = 29, COL_LINK = 35, COL_ENTREGUE = 36;
-var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Parente', outro: 'Outra pessoa' };
+var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Parente', outro: 'Outra pessoa',
+  // quando o próprio contratante é menor: com quem ele viaja
+  junto: 'Viaja com o responsável', acomp: 'Viaja com adulto da reserva', sozinho: 'Viaja só com o grupo' };
 var CAB_AGENDA = ['id', 'data', 'dia', 'destino', 'categoria', 'valor', 'obs', 'selo', 'mes', 'cena', 'vagas', 'ativo'];
 
 // ---------- menu ----------
@@ -180,8 +182,8 @@ function doPost(e) {
     var base = [agora, d.codigo, STATUS[0], v.id, v.destino, v.data];
     var linhas = [];
     linhas.push(base.concat(['Contratante', c.nome, c.rg, c.cpf, c.nascimento, c.idade, c.telefone, c.email, c.endereco,
-      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, '',
-      '', '', '', '', '', '', '', '']));
+      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, c.autorizacao || ''
+      ].concat(colunasMenor_(c.menor))));
     (d.acompanhantes || []).slice(0, 20).forEach(function (a) {
       linhas.push(base.concat(['Acompanhante de ' + c.nome, a.nome, a.rg, a.cpf, a.nascimento, a.idade, c.telefone, '', '',
         a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor))));
@@ -505,7 +507,7 @@ function passageirosDa_(id) {
       var iv = idadeNaViagem_(l[10], l[5]);
       return { codigo: l[1], status: l[2], nome: l[7], rg: l[8], cpf: l[9], idade: l[11], telefone: l[12],
         embarque: l[15], emgNome: l[16], emgTel: l[17], idadeViagem: iv,
-        menor: iv != null && iv >= 0 && iv < 18 && !/^Contratante/.test(l[6]), entregue: String(l[35]).toUpperCase() === 'TRUE', aut: l[27] };
+        menor: iv != null && iv >= 0 && iv < 18, entregue: String(l[35]).toUpperCase() === 'TRUE', aut: l[27] };
     });
 }
 
@@ -609,7 +611,8 @@ function prepararMenores_(sh, codigos, forcar) {
     if (alvo && !alvo[l[1]]) return;
     var linha = i + 2, faixa = sh.getRange(linha, 1, 1, CAB_RESERVAS.length);
     var id = idadeNaViagem_(l[10], l[5]);
-    var menor = id != null && id >= 0 && id < 18 && !/^Contratante/.test(l[6]);
+    var ehContratante = /^Contratante/.test(l[6]);
+    var menor = id != null && id >= 0 && id < 18;
     if (!menor) {
       // deixou de ser menor (data ou nascimento corrigidos): tira o destaque e a autorização
       if (String(faixa.getBackground()).toLowerCase() === COR_MENOR) faixa.setBackground(null);
@@ -622,13 +625,17 @@ function prepararMenores_(sh, codigos, forcar) {
     var ent = String(l[COL_ENTREGUE - 1]).toUpperCase();
     if (ent !== 'TRUE' && ent !== 'FALSE') sh.getRange(linha, COL_ENTREGUE).insertCheckboxes();
     var c = contratantes[l[1]] || [];
-    var a = { nome: l[7], nasc: isoDe_(l[10]), rg: l[8], cpf: l[9], dif: c.length && l[15] !== c[15], emb: l[15],
+    var a = { contratante: ehContratante, nome: l[7], nasc: isoDe_(l[10]), rg: l[8], cpf: l[9], dif: c.length && l[15] !== c[15], emb: l[15],
       vinc: chaveVinculo_(l[COL_VINC - 1]), rNome: l[29], rVinc: l[30], rCpf: l[31], rRg: l[32], rTel: l[33] };
+    var adultos = txt.filter(function (o) { if (o[1] !== l[1]) return false; var io = idadeNaViagem_(o[10], o[5]); return io != null && io >= 18; })
+      .map(function (o) { return o[7]; });
     var r = { codigo: l[1], ano: ANO_VIAGENS, v: { destino: l[4], data: l[5], dia: dias[l[3]] || '' },
-      f: { nome: c[7] || '', rg: c[8] || '', cpf: c[9] || '', tel: c[12] || '', embarque: c[15] || l[15], cidade: cidadeDe_(c[14]), saude: c[18] || '', emgNome: c[16] || '', emgTel: c[17] || '' } };
+      f: { nome: c[7] || '', rg: c[8] || '', cpf: c[9] || '', tel: c[12] || '', embarque: c[15] || l[15], cidade: cidadeDe_(c[14]), saude: c[18] || '', emgNome: c[16] || '', emgTel: c[17] || '' },
+      adultos: adultos };
     var falta = [];
     if (!c.length) falta.push('linha do contratante');
-    if (!a.vinc) falta.push('quem é o contratante (coluna AC)');
+    if (!a.vinc) falta.push(ehContratante ? 'com quem o menor viaja (coluna AC)' : 'quem é o contratante (coluna AC)');
+    else if (ehContratante && a.vinc === 'acomp' && !adultos.length) falta.push('um acompanhante maior de idade na reserva');
     else if (AUT_.precisaResp(a)) {
       if (String(a.rNome).trim().split(/\s+/).length < 2) falta.push('nome do responsável (AD)');
       if (!a.rVinc) falta.push('responsável é mãe, pai ou tutor (AE)');
@@ -717,6 +724,12 @@ var AUT_ = (function () {
     outro: 'Outra pessoa (amigo, vizinho, padrinho...)'
   };
   var PAPEIS = ['Mãe', 'Pai', 'Tutor(a) ou guardião(ã)'];
+  // contratante menor de idade: com quem ele viaja
+  var VIAJA_COM = {
+    junto: 'Com o responsável (ele vai como acompanhante nesta reserva)',
+    acomp: 'Com outro adulto desta reserva (acompanhante maior de idade)',
+    sozinho: 'Sem adulto conhecido, só com o grupo da excursão'
+  };
 
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function dataBr(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (v || ''); }
@@ -732,8 +745,8 @@ var AUT_ = (function () {
     return a;
   }
   function ehMenor(a, r) { var i = idade(a.nasc, r.v.data, r.ano); return i != null && i >= 0 && i < 18; }
-  function precisaResp(a) { return a.vinc === 'parente' || a.vinc === 'outro'; }
-  function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && a.vinc === 'outro'; }
+  function precisaResp(a) { return !!a.contratante || a.vinc === 'parente' || a.vinc === 'outro'; }
+  function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && (a.contratante ? a.vinc === 'sozinho' : a.vinc === 'outro'); }
   function quemAssina(a, f) {
     if (precisaResp(a)) return { nome: (a.rNome || '').trim(), rg: (a.rRg || '').trim(), cpf: a.rCpf || '', tel: a.rTel || '', papel: a.rVinc || '' };
     return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
@@ -745,12 +758,15 @@ var AUT_ = (function () {
 
   // r = { codigo, ano, v: { destino, data, dia }, f: { nome, rg, cpf, tel, embarque, cidade, saude, emgNome, emgTel } }
   function html(r, a) {
-    var v = r.v, f = r.f, q = quemAssina(a, f), id = idade(a.nasc, v.data, r.ano), mesmo = !precisaResp(a);
+    var v = r.v, f = r.f, q = quemAssina(a, f), id = idade(a.nasc, v.data, r.ano);
+    var mesmo = a.contratante ? a.vinc === 'junto' : !precisaResp(a);
     var box = function (on) { return '<span class="ap-box">' + (on ? 'X' : '&nbsp;') + '</span>'; };
     var ln = function (t) { return t ? '<strong>' + esc(t) + '</strong>' : '<span class="ap-blank"></span>'; };
     var nota = exigeFirma(a, id)
       ? '<strong>Firma reconhecida obrigatória.</strong> O(a) menor tem menos de 16 anos e viaja com quem não é parente próximo: reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Assinatura eletrônica (gov.br) não é aceita.'
-      : (id < 16 && a.vinc === 'parente'
+      : (id < 16 && a.contratante && a.vinc === 'acomp'
+        ? 'Se o adulto acompanhante não for avô/avó, tio(a) ou irmão(ã) maior de idade, reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Se for parente, leve documento que comprove o parentesco.'
+        : id < 16 && a.vinc === 'parente'
         ? 'O(a) menor viaja com parente: leve também um documento que comprove o parentesco (certidão de nascimento ou RG com filiação).'
         : 'Leve esta autorização assinada e um documento com foto do(a) menor no dia do embarque.');
     return '<section class="ap-doc">' +
@@ -760,12 +776,16 @@ var AUT_ = (function () {
         box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === PAPEIS[2]) + ' tutor(a) ou guardião(ã),</p>' +
       '<p><strong>AUTORIZO</strong> o(a) menor ' + ln((a.nome || '').trim()) + ', nascido(a) em ' + ln(dataBr(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + ln((a.rg || '').trim()) + ', CPF nº ' + ln(a.cpf) +
         ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + (v.dia ? ' (' + esc(v.dia) + ')' : '') + '</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +
-      (mesmo
-        ? '<p>O(a) menor viajará acompanhado(a) por mim, responsável pela reserva, durante toda a excursão.</p>'
+      (a.contratante && !mesmo
+        ? (a.vinc === 'acomp'
+          ? '<p>O(a) menor, que fez esta reserva, viajará acompanhado(a) de ' + ln((r.adultos || []).join(', ')) + ', maior(es) de idade, que se responsabiliza(m) por ele(a) durante toda a excursão.</p>'
+          : '<p>O(a) menor, que fez esta reserva, viajará com o grupo da excursão, sem acompanhante adulto conhecido, sob os cuidados da equipe da Bora Ali Excursões.</p>')
+        : mesmo
+        ? '<p>O(a) menor viajará acompanhado(a) por mim' + (a.contratante ? '' : ', responsável pela reserva,') + ' durante toda a excursão.</p>'
         : '<p>O(a) menor viajará acompanhado(a) de ' + ln(f.nome) + ', RG nº ' + ln(f.rg) + ', CPF nº ' + ln(f.cpf) + ', telefone ' + ln(f.tel) + ', ' +
           (a.vinc === 'parente' ? 'parente maior de idade do(a) menor' : 'pessoa maior de idade de minha confiança') + ', que se responsabiliza por ele(a) durante toda a excursão.</p>') +
       '<p>Saúde e necessidades informadas: ' + esc(f.saude || 'nenhuma') + '. Contato de emergência: ' + esc([f.emgNome, f.emgTel].filter(Boolean).join(' - ') || q.nome + ' - ' + q.tel) + '.</p>' +
-      '<p>Em caso de emergência, autorizo ' + (mesmo ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
+      '<p>Em caso de emergência, autorizo ' + (mesmo || (a.contratante && a.vinc === 'sozinho') ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
       '<p class="ap-local">' + esc(f.cidade || '______________') + ', ____ de ______________ de ________.</p>' +
       '<table class="ap-sign"><tr><td class="ap-assina"><div class="ap-line"></div>' + esc(q.nome) + '<br><small>Assinatura do(a) responsável legal</small></td><td class="ap-firma">Espaço para reconhecimento de firma</td></tr></table>' +
       '<p class="ap-note">' + nota + '</p>' +
@@ -785,5 +805,5 @@ var AUT_ = (function () {
     '.ap-line{border-top:1px solid #111;margin-bottom:4px}' +
     '.ap-firma{width:200px;height:110px;border:1px dashed #777;color:#777;font-size:9pt;text-align:center;vertical-align:middle;padding:6px}' +
     '.ap-note{margin-top:22px !important;border:1px solid #F47B20;background:#FFF8F1;padding:8px 10px;font-size:10.5pt}';
-  return { VINCULOS: VINCULOS, PAPEIS: PAPEIS, idade: idade, precisaResp: precisaResp, exigeFirma: exigeFirma, texto: texto, html: html, CSS: CSS };
+  return { VINCULOS: VINCULOS, PAPEIS: PAPEIS, VIAJA_COM: VIAJA_COM, idade: idade, precisaResp: precisaResp, exigeFirma: exigeFirma, texto: texto, html: html, CSS: CSS };
 })();

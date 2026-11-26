@@ -142,7 +142,7 @@
     '<label style="' + lbl + '">Nome do menor<input name="nome" style="' + inp + '"></label>' +
     '<label style="' + lbl + '">Nascimento<input name="nasc" type="date" style="' + inp + '"></label>' +
     '<label style="' + lbl + '">Data do passeio<input name="data" style="' + inp + '" placeholder="16/01"></label>' +
-    '<label style="' + lbl + '">Contratante é<select name="vinc" style="' + inp + '">' + vincOpts + '</select></label>' +
+    '<label style="' + lbl + '"><span data-vinc-rotulo>Contratante é</span><select name="vinc" style="' + inp + '">' + vincOpts + '</select></label>' +
     '<label style="' + lbl + '">Responsável que assina<input name="rNome" style="' + inp + '" placeholder="Só se não for o contratante"></label>' +
     '<label style="' + lbl + '">É o(a)<select name="rVinc" style="' + inp + '">' + papelOpts + '</select></label>' +
     '<label style="' + lbl + '">CPF do responsável<input name="rCpf" style="' + inp + '"></label>' +
@@ -166,7 +166,7 @@
     r.aut.r.v.data = fm.data.value || r.aut.r.v.data;
     r.data = r.aut.r.v.data;
     var id = A.idade(a.nasc, r.data, r.aut.r.ano);
-    r.nome = a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : '');
+    r.nome = a.contratante ? a.nome.trim() : a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : '');
     gravar(lista); render();
     aviso(A.ehMenor(a, r.aut.r) ? 'Autorização refeita com os dados novos.' : 'Na nova data, não é mais menor: autorização dispensada.');
   });
@@ -176,7 +176,10 @@
     if (ed) {
       editando = +ed.getAttribute('data-editar');
       var x = lista[editando].aut, fm = dlg.querySelector('form');
-      fm.nome.value = x.a.nome || ''; fm.nasc.value = x.a.nasc || ''; fm.data.value = x.r.v.data || ''; fm.vinc.value = x.a.vinc || 'pai';
+      var mapa = x.a.contratante ? A.VIAJA_COM : A.VINCULOS;
+      fm.vinc.innerHTML = Object.keys(mapa).map(function (k) { return '<option value="' + k + '">' + esc(mapa[k]) + '</option>'; }).join('');
+      dlg.querySelector('[data-vinc-rotulo]').textContent = x.a.contratante ? 'Viaja com' : 'Contratante é';
+      fm.nome.value = x.a.nome || ''; fm.nasc.value = x.a.nasc || ''; fm.data.value = x.r.v.data || ''; fm.vinc.value = x.a.vinc || Object.keys(mapa)[0];
       fm.rNome.value = x.a.rNome || ''; fm.rVinc.value = x.a.rVinc || ''; fm.rCpf.value = x.a.rCpf || ''; fm.rTel.value = x.a.rTel || '';
       dlg.showModal();
     }

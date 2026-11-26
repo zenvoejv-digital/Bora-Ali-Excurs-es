@@ -10,6 +10,12 @@
     outro: 'Outra pessoa (amigo, vizinho, padrinho...)'
   };
   var PAPEIS = ['Mãe', 'Pai', 'Tutor(a) ou guardião(ã)'];
+  // contratante menor de idade: com quem ele viaja
+  var VIAJA_COM = {
+    junto: 'Com o responsável (ele vai como acompanhante nesta reserva)',
+    acomp: 'Com outro adulto desta reserva (acompanhante maior de idade)',
+    sozinho: 'Sem adulto conhecido, só com o grupo da excursão'
+  };
 
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function dataBr(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (v || ''); }
@@ -25,8 +31,8 @@
     return a;
   }
   function ehMenor(a, r) { var i = idade(a.nasc, r.v.data, r.ano); return i != null && i >= 0 && i < 18; }
-  function precisaResp(a) { return a.vinc === 'parente' || a.vinc === 'outro'; }
-  function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && a.vinc === 'outro'; }
+  function precisaResp(a) { return !!a.contratante || a.vinc === 'parente' || a.vinc === 'outro'; }
+  function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && (a.contratante ? a.vinc === 'sozinho' : a.vinc === 'outro'); }
   function quemAssina(a, f) {
     if (precisaResp(a)) return { nome: (a.rNome || '').trim(), rg: (a.rRg || '').trim(), cpf: a.rCpf || '', tel: a.rTel || '', papel: a.rVinc || '' };
     return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
@@ -38,12 +44,15 @@
 
   // r = { codigo, ano, v: { destino, data, dia }, f: { nome, rg, cpf, tel, embarque, cidade, saude, emgNome, emgTel } }
   function html(r, a) {
-    var v = r.v, f = r.f, q = quemAssina(a, f), id = idade(a.nasc, v.data, r.ano), mesmo = !precisaResp(a);
+    var v = r.v, f = r.f, q = quemAssina(a, f), id = idade(a.nasc, v.data, r.ano);
+    var mesmo = a.contratante ? a.vinc === 'junto' : !precisaResp(a);
     var box = function (on) { return '<span class="ap-box">' + (on ? 'X' : '&nbsp;') + '</span>'; };
     var ln = function (t) { return t ? '<strong>' + esc(t) + '</strong>' : '<span class="ap-blank"></span>'; };
     var nota = exigeFirma(a, id)
       ? '<strong>Firma reconhecida obrigatória.</strong> O(a) menor tem menos de 16 anos e viaja com quem não é parente próximo: reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Assinatura eletrônica (gov.br) não é aceita.'
-      : (id < 16 && a.vinc === 'parente'
+      : (id < 16 && a.contratante && a.vinc === 'acomp'
+        ? 'Se o adulto acompanhante não for avô/avó, tio(a) ou irmão(ã) maior de idade, reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Se for parente, leve documento que comprove o parentesco.'
+        : id < 16 && a.vinc === 'parente'
         ? 'O(a) menor viaja com parente: leve também um documento que comprove o parentesco (certidão de nascimento ou RG com filiação).'
         : 'Leve esta autorização assinada e um documento com foto do(a) menor no dia do embarque.');
     return '<section class="ap-doc">' +
@@ -53,12 +62,16 @@
         box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === PAPEIS[2]) + ' tutor(a) ou guardião(ã),</p>' +
       '<p><strong>AUTORIZO</strong> o(a) menor ' + ln((a.nome || '').trim()) + ', nascido(a) em ' + ln(dataBr(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + ln((a.rg || '').trim()) + ', CPF nº ' + ln(a.cpf) +
         ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + (v.dia ? ' (' + esc(v.dia) + ')' : '') + '</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +
-      (mesmo
-        ? '<p>O(a) menor viajará acompanhado(a) por mim, responsável pela reserva, durante toda a excursão.</p>'
+      (a.contratante && !mesmo
+        ? (a.vinc === 'acomp'
+          ? '<p>O(a) menor, que fez esta reserva, viajará acompanhado(a) de ' + ln((r.adultos || []).join(', ')) + ', maior(es) de idade, que se responsabiliza(m) por ele(a) durante toda a excursão.</p>'
+          : '<p>O(a) menor, que fez esta reserva, viajará com o grupo da excursão, sem acompanhante adulto conhecido, sob os cuidados da equipe da Bora Ali Excursões.</p>')
+        : mesmo
+        ? '<p>O(a) menor viajará acompanhado(a) por mim' + (a.contratante ? '' : ', responsável pela reserva,') + ' durante toda a excursão.</p>'
         : '<p>O(a) menor viajará acompanhado(a) de ' + ln(f.nome) + ', RG nº ' + ln(f.rg) + ', CPF nº ' + ln(f.cpf) + ', telefone ' + ln(f.tel) + ', ' +
           (a.vinc === 'parente' ? 'parente maior de idade do(a) menor' : 'pessoa maior de idade de minha confiança') + ', que se responsabiliza por ele(a) durante toda a excursão.</p>') +
       '<p>Saúde e necessidades informadas: ' + esc(f.saude || 'nenhuma') + '. Contato de emergência: ' + esc([f.emgNome, f.emgTel].filter(Boolean).join(' - ') || q.nome + ' - ' + q.tel) + '.</p>' +
-      '<p>Em caso de emergência, autorizo ' + (mesmo ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
+      '<p>Em caso de emergência, autorizo ' + (mesmo || (a.contratante && a.vinc === 'sozinho') ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
       '<p class="ap-local">' + esc(f.cidade || '______________') + ', ____ de ______________ de ________.</p>' +
       '<table class="ap-sign"><tr><td class="ap-assina"><div class="ap-line"></div>' + esc(q.nome) + '<br><small>Assinatura do(a) responsável legal</small></td><td class="ap-firma">Espaço para reconhecimento de firma</td></tr></table>' +
       '<p class="ap-note">' + nota + '</p>' +
@@ -95,6 +108,6 @@
     setTimeout(fim, 1500);
   }
 
-  window.BoraAut = { VINCULOS: VINCULOS, PAPEIS: PAPEIS, idade: idade, ehMenor: ehMenor, precisaResp: precisaResp,
+  window.BoraAut = { VINCULOS: VINCULOS, PAPEIS: PAPEIS, VIAJA_COM: VIAJA_COM, idade: idade, ehMenor: ehMenor, precisaResp: precisaResp,
     exigeFirma: exigeFirma, quemAssina: quemAssina, texto: texto, html: html, imprimir: imprimir, dataBr: dataBr };
 })();

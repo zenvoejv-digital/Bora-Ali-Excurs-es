@@ -60,6 +60,8 @@ A planilha guarda nome, RG, CPF, endereço e data de nascimento. Compartilhe só
 
 **No site:** quando um acompanhante tem menos de 18 anos na data do passeio, o site pede quem é o contratante para ele (pai/mãe, responsável legal, parente ou outra pessoa) e, se precisar, os dados de quem vai assinar. Depois da reserva, o cliente imprime a autorização pronta.
 
+**Contratante menor de idade:** quem tem menos de 18 anos pode reservar, mas o site abre um quadro para os dados do pai, mãe ou responsável legal e pergunta com quem o menor viaja (com o responsável, com outro adulto da reserva ou só com o grupo). Na planilha, a coluna AC da linha do contratante mostra essa escolha.
+
 **Na planilha (tudo automático):**
 - Ao chegar uma reserva com menor, a linha fica **laranja** e a planilha gera a **autorização em PDF** na pasta *Bora Ali - Autorizações de menores* do seu Google Drive. O link fica na coluna **AI**. O arquivo é privado: para mandar ao cliente, baixe e envie no WhatsApp.
 - A coluna **AB** resume quem assina e se precisa de firma reconhecida. Se faltar algum dado, ela diz o que falta (e o PDF só é gerado quando estiver completo).
