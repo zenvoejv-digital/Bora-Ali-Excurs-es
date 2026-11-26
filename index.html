@@ -178,6 +178,7 @@ Chamar no WhatsApp
 <span style="font-weight: 700; color: #FF9A4D; font-size: 13px; letter-spacing: 1px">REDES</span>
 <a href="https://www.instagram.com/excursoesboraali/" style="color: #FFFFFF; font-size: 17px; font-weight: 600">@excursoesboraali</a>
 <span style="font-size: 17px; font-weight: 600">Facebook: Bora Ali Excursões</span>
+<a id="link-avaliacao" hidden href="#" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; color: #FF9A4D; font-size: 16px; font-weight: 700; min-height: 44px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7.1L12 17.3 5.8 21l1.6-7.1L2 9.2l7.1-.6z"></path></svg>Avalie a gente no Google</a>
 </div>
 <div style="display: flex; flex-direction: column; gap: 8px">
 <span style="font-weight: 700; color: #FF9A4D; font-size: 13px; letter-spacing: 1px">ENDEREÇO</span>
@@ -214,13 +215,13 @@ R. Mal. Deodoro da Fonseca, 1117 - Vila Nova</a>
 </div>
 </div>
 
-<div style="padding: 22px 24px 28px; display: flex; flex-direction: column; gap: 16px">
-<div style="display: flex; align-items: center; gap: 10px; padding-top: 6px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #0A4D8C; color: #FFFFFF; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">1</span><h3 style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 18px; font-weight: 600; color: #0A4D8C">Seus dados</h3></div>
+<div id="bk-form" style="padding: 22px 24px 28px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 10px; padding-top: 6px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #0A4D8C; color: #FFFFFF; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">1</span><h3 style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 18px; font-weight: 600; color: #0A4D8C">Dados do contratante</h3></div>
 
 <div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-nome">Nome completo *</label><input id="bk-nome" class="f-input" type="text" autocomplete="name"></div>
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
-<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-cpf">CPF *</label><input id="bk-cpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00"></div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-cpf">CPF *</label><input id="bk-cpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00" aria-describedby="bk-cpf-msg"><span class="f-hint" id="bk-cpf-msg" aria-live="polite"></span></div>
 
 <div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-rg">RG *</label><input id="bk-rg" class="f-input" type="text" placeholder="00.000.000-0"></div>
 
@@ -231,7 +232,29 @@ R. Mal. Deodoro da Fonseca, 1117 - Vila Nova</a>
 <div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-tel">Telefone / WhatsApp *</label><input id="bk-tel" class="f-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000"></div>
 
 </div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<span class="f-label" style="margin: 0">Endereço do contratante *</span>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-cep">CEP *</label><input id="bk-cep" class="f-input" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" aria-describedby="bk-cep-msg"><span class="f-hint" id="bk-cep-msg" aria-live="polite">Digite o CEP e preenchemos o resto.</span></div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-num">Número *</label><input id="bk-num" class="f-input" type="text" inputmode="numeric" autocomplete="address-line2"></div>
+</div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-rua">Rua *</label><input id="bk-rua" class="f-input" type="text" autocomplete="address-line1"></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-bairro">Bairro *</label><input id="bk-bairro" class="f-input" type="text"></div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-comp">Complemento (opcional)</label><input id="bk-comp" class="f-input" type="text" placeholder="Apto, bloco, casa"></div>
+</div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-cidade">Cidade / UF *</label><input id="bk-cidade" class="f-input" type="text" autocomplete="address-level2" placeholder="Salto/SP"></div>
+</div>
+
 <div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-email">E-mail (opcional)</label><input id="bk-email" class="f-input" type="email" autocomplete="email"></div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; background: #F7FAFE; border: 1.5px solid #D6E4F2; border-radius: 16px; padding: 16px">
+<span class="f-label" style="margin: 0">Contato de emergência <span style="font-weight: 500; color: #55657A">(recomendado)</span></span>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-emg-nome">Nome</label><input id="bk-emg-nome" class="f-input" type="text" placeholder="Quem avisar se precisar"></div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-emg-tel">Telefone</label><input id="bk-emg-tel" class="f-input" type="tel" inputmode="tel" placeholder="(11) 90000-0000"></div>
+</div>
+</div>
 
 
 <div style="display: flex; align-items: center; gap: 10px; padding-top: 6px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #0A4D8C; color: #FFFFFF; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">2</span><h3 style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 18px; font-weight: 600; color: #0A4D8C">Sua viagem</h3></div>
@@ -239,17 +262,13 @@ R. Mal. Deodoro da Fonseca, 1117 - Vila Nova</a>
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
 <div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-emb">Cidade de embarque *</label><select id="bk-emb" class="f-input"><option value="">Selecione</option></select></div>
 
-<div style="display: flex; flex-direction: column"><span class="f-label" id="bk-pax-label">Passageiros *</span>
-<div role="group" aria-labelledby="bk-pax-label" style="display: flex; align-items: center; gap: 8px; border: 1.5px solid #C9D8E8; border-radius: 12px; padding: 2px; min-height: 48px; box-sizing: border-box">
-<button type="button" id="bk-pax-down" aria-label="Menos um passageiro" style="width: 44px; height: 44px; border: none; border-radius: 10px; background: #EEF5FC; color: #0A4D8C; font-size: 22px; font-weight: 700; cursor: pointer">−</button>
-<span id="bk-pax" aria-live="polite" style="flex-grow: 1; text-align: center; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 18px">1</span>
-<button type="button" id="bk-pax-up" aria-label="Mais um passageiro" style="width: 44px; height: 44px; border: none; border-radius: 10px; background: #EEF5FC; color: #0A4D8C; font-size: 22px; font-weight: 700; cursor: pointer">+</button>
-</div></div>
 </div>
-<div id="bk-acomp-wrap" hidden>
-<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-acomp">Acompanhantes: nome completo e CPF de cada um *</label><textarea id="bk-acomp" class="f-input" rows="3" placeholder="Maria da Silva, CPF 000.000.000-00" style="resize: vertical"></textarea></div>
-
-</div>
+<div id="bk-acomps" style="display: flex; flex-direction: column; gap: 14px"></div>
+<button type="button" id="bk-add-acomp" class="btn" style="font-family: inherit; cursor: pointer; border: 2px dashed #8FB8DE; background: #F7FAFE; color: #0A4D8C; border-radius: 16px; padding: 14px 16px; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 15px">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+<span id="bk-add-label">Adicionar acompanhante</span><span style="font-weight: 500; color: #55657A">(opcional)</span>
+</button>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-saude">Necessidade especial, restrição de saúde ou alimentar? (opcional)</label><textarea id="bk-saude" class="f-input" rows="2" placeholder="Ex.: cadeirante, alergia, gestante, criança de colo" style="resize: vertical"></textarea></div>
 
 <div style="display: flex; align-items: center; gap: 10px; padding-top: 6px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #0A4D8C; color: #FFFFFF; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center">3</span><h3 style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 18px; font-weight: 600; color: #0A4D8C">Pagamento</h3></div>
 
@@ -264,27 +283,69 @@ R. Mal. Deodoro da Fonseca, 1117 - Vila Nova</a>
 </div>
 
 </div>
-<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-obs">Observações (opcional)</label><textarea id="bk-obs" class="f-input" rows="2" placeholder="Ex.: criança de colo, poltrona próxima" style="resize: vertical"></textarea></div>
+<div style="background: #FFF1E6; border: 1.5px solid #F47B20; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-weight: 700; font-size: 15px; color: #7A3608">Condições da reserva</span>
+<ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.5; color: #44403C">
+<li>A reserva é realizada mediante sinal de <strong>50% do valor</strong> (<span id="bk-sinal-terms"></span>).</li>
+<li>Em caso de cancelamento, <strong>não haverá estorno</strong>.</li>
+<li>O pagamento deve ser <strong>concluído antes do passeio</strong>.</li>
+</ul>
+</div>
+<div style="display: flex; flex-direction: column; min-width: 0"><label class="f-label" for="bk-obs">Observações (opcional)</label><textarea id="bk-obs" class="f-input" rows="2" placeholder="Ex.: queremos sentar juntos" style="resize: vertical"></textarea></div>
 
 
 <div style="background: #EEF5FC; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px">
 <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px; color: #33445A"><span id="bk-sum-left"></span><span id="bk-pay-label"></span></div>
 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px"><span style="font-weight: 700; font-size: 16px; color: #0F1B2D">Total estimado</span><span id="bk-total" style="font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 24px; color: #0A4D8C"></span></div>
+<div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px; color: #7A3608; font-weight: 700; border-top: 1px dashed #C9D8E8; padding-top: 8px"><span>Sinal para reservar (50%)</span><span id="bk-sinal"></span></div>
 </div>
 
 <label for="bk-ok" style="display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: #33445A; cursor: pointer">
 <input id="bk-ok" type="checkbox" style="width: 22px; height: 22px; margin: 0; flex: none; accent-color: #0A4D8C">
-<span>Autorizo o envio destes dados à Bora Ali Excursões pelo WhatsApp, só para fazer a minha reserva. *</span>
+<span>Li e concordo com as condições da reserva e autorizo a Bora Ali Excursões a receber e guardar estes dados só para organizar a minha viagem. *</span>
 </label>
 
 <p id="bk-error" role="alert" hidden style="margin: 0; background: #FFF1E6; border: 1.5px solid #F47B20; color: #7A3608; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600"></p>
-<p id="bk-sent" role="status" hidden style="margin: 0; background: #E6F4EA; border: 1.5px solid #2E8B57; color: #1E5B37; border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600">Abrimos o WhatsApp com a sua reserva pronta. É só tocar em enviar!</p>
 
 <button type="button" class="btn" id="bk-submit" style="font-family: inherit; border: none; cursor: pointer; background: #F47B20; color: #06284D; font-weight: 800; font-size: 18px; padding: 16px 24px; border-radius: 999px; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 10px">
 <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.3 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"></path></svg>
 Agendar pelo WhatsApp
 </button>
-<span style="font-size: 13px; color: #55657A; text-align: center">Nenhum pagamento é feito no site. A Bora Ali confirma a vaga e envia os dados de pagamento pelo WhatsApp.</span>
+<span style="font-size: 13px; color: #55657A; text-align: center">Nenhum pagamento é feito no site. Depois de enviar, você vê o valor do sinal e como pagar.</span>
+</div>
+<div id="bk-done" hidden style="padding: 26px 24px 32px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 14px">
+<span style="width: 52px; height: 52px; flex: none; border-radius: 50%; background: #E6F4EA; color: #2E8B57; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h3 tabindex="-1" id="bk-done-title" style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 22px; font-weight: 700; color: #0A4D8C">Reserva enviada!</h3>
+<span style="font-size: 15px; color: #33445A">Seu código de reserva é <strong id="bk-code" style="font-family: 'Poppins', sans-serif; font-size: 18px; color: #0F1B2D; letter-spacing: 0.5px"></strong></span>
+</div>
+</div>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #33445A">Abrimos o WhatsApp da Bora Ali com a sua reserva pronta. <strong>Toque em enviar</strong> para a gente receber. Se o WhatsApp não abriu:</p>
+<a id="bk-reopen" class="btn" href="#" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #0A4D8C; color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; padding: 14px 20px; border-radius: 999px; min-height: 52px">Abrir o WhatsApp de novo</a>
+
+<div id="bk-pix-block" hidden style="background: #EEF5FC; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 17px; color: #0A4D8C">Pague o sinal de <span id="bk-done-sinal"></span> por Pix</span>
+<label class="f-label" for="bk-pix-code" style="margin: 0">Pix copia e cola</label>
+<textarea id="bk-pix-code" class="f-input" rows="3" readonly style="font-family: ui-monospace, monospace; font-size: 13px; resize: none"></textarea>
+<button type="button" id="bk-copy" class="btn" style="font-family: inherit; border: none; cursor: pointer; background: #F47B20; color: #06284D; font-weight: 800; font-size: 16px; padding: 12px 20px; border-radius: 999px; min-height: 48px">Copiar código Pix</button>
+<span class="f-hint" style="margin: 0">No app do banco, escolha <strong>Pix › Copia e cola</strong>. Chave: <span id="bk-pix-key"></span></span>
+<span id="bk-pix-demo" hidden style="align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; color: #7A3608; background: #FFE2C4; padding: 4px 10px; border-radius: 999px">DEMONSTRAÇÃO · chave Pix fictícia</span>
+</div>
+<div id="bk-pix-none" hidden style="background: #EEF5FC; border-radius: 18px; padding: 18px; font-size: 15px; line-height: 1.55; color: #33445A">O sinal é de <strong id="bk-done-sinal2"></strong>. A Bora Ali envia os dados para pagamento pelo WhatsApp.</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-weight: 700; font-size: 15px; color: #0F1B2D">Próximos passos</span>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; line-height: 1.5; color: #33445A">
+<li>Pague o sinal de 50% para garantir a vaga.</li>
+<li>Mande o comprovante no WhatsApp junto com o código <strong id="bk-code2"></strong>.</li>
+<li>O restante é pago antes do passeio. O ponto e o horário de embarque chegam pelo WhatsApp.</li>
+</ol>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<button type="button" id="bk-new" style="font-family: inherit; flex: 1 1 200px; cursor: pointer; border: 2px solid #0A4D8C; background: #FFFFFF; color: #0A4D8C; font-weight: 700; font-size: 15px; padding: 12px 18px; border-radius: 999px; min-height: 48px">Reservar outra viagem</button>
+<button type="button" data-close style="font-family: inherit; flex: 1 1 120px; cursor: pointer; border: none; background: #EEF5FC; color: #0A4D8C; font-weight: 700; font-size: 15px; padding: 12px 18px; border-radius: 999px; min-height: 48px">Fechar</button>
+</div>
 </div>
 </div>
 </div>

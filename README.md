@@ -2,6 +2,13 @@
 
 Site estático da **Bora Ali Excursões** (Salto/SP): agenda de excursões por categoria, filtro por mês, animações por destino e uma aba de reserva que manda o cadastro pronto para o WhatsApp.
 
+Recursos da reserva:
+- cadastro do contratante (com CEP que preenche o endereço sozinho e conferência de CPF), acompanhantes opcionais, contato de emergência e necessidades especiais;
+- código de reserva (ex.: `BA-K3F9Q2`) na mensagem e na planilha;
+- tela final com **Pix copia e cola** do sinal de 50%, já com o valor;
+- rodízio das reservas entre os dois WhatsApps da agência;
+- **opcional:** planilha Google que recebe as reservas, conta as vagas ("Restam X vagas", "Esgotado" e lista de espera), deixa editar a agenda e gera a lista de embarque.
+
 Feito só com HTML, CSS e JavaScript, sem build e sem dependências. Pronto para a Vercel.
 
 ## Estrutura
@@ -19,6 +26,9 @@ assets/
   js/art.js             ilustrações animadas (SVG) de cada destino e categoria
   js/main.js            filtro, cards e aba de reserva
   img/                  logo, imagens de fundo e imagem de compartilhamento
+google-apps-script/
+  Codigo.gs             script da planilha de reservas
+  LEIA-ME.md            como ligar a planilha ao site
 ```
 
 ## Como atualizar a agenda
@@ -27,7 +37,13 @@ Edite **`assets/js/data.js`**:
 
 - **Nova viagem:** copie uma linha de `BORA_VIAGENS` e troque `data`, `dia`, `destino`, `categoria`, `valor`, `obs`, `selo`, `mes` e `cena`.
 - **Novo mês:** acrescente em `BORA_MESES`, por exemplo `{ id: "mar", label: "Março" }`, e use `mes: "mar"` nas viagens.
-- **WhatsApp que recebe as reservas, parcelas máximas e cidades de embarque:** ficam em `BORA_CONFIG`.
+- **Configurações em `BORA_CONFIG`:**
+  - números de WhatsApp que recebem as reservas, parcelas máximas e cidades de embarque;
+  - `pix.chave`: com ela preenchida, a tela final mostra o Pix copia e cola do sinal;
+  - `planilhaUrl`: liga a planilha (veja `google-apps-script/LEIA-ME.md`);
+  - `linkAvaliacao`: mostra "Avalie a gente no Google" no rodapé;
+  - `avisoVagas`: a partir de quantas vagas restantes aparece o aviso "Restam X vagas".
+- **Vagas:** preencha `vagas` em cada viagem (total de lugares). As vagas ocupadas são contadas pela planilha.
 
 As categorias aceitas são `fds`, `praia`, `parques`, `natureza` e `passeios`. Em `cena`, use uma das chaves de `SCENES` em `assets/js/art.js`, ou `""` para uma cena genérica.
 
@@ -46,6 +62,10 @@ As categorias aceitas são `fds`, `praia`, `parques`, `natureza` e `passeios`. E
 3. Aguarde a propagação. A Vercel emite o HTTPS automaticamente.
 
 Depois de ter o domínio, vale trocar no `index.html` o `og:image` para o endereço completo (ex.: `https://boraaliexcursoes.com.br/assets/img/og-image.jpg`), para a imagem aparecer certinho quando o link for compartilhado no WhatsApp.
+
+## Modo demonstração
+
+Abra o site com **`?demo=1`** no fim do endereço (ex.: `https://seusite.com.br/?demo=1`) para mostrar ao cliente as funções que dependem de dados reais: vagas e "Esgotado", Pix copia e cola e botão de avaliação, todos com dados fictícios. Nada é enviado para a planilha nesse modo, e quem abre o endereço normal não vê a demonstração.
 
 ## Testar no computador
 
