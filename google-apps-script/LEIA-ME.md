@@ -75,6 +75,6 @@ Outros itens do menu *Menores de idade*:
 - **Gerar/atualizar autorização (linhas selecionadas)**: refaz na hora as autorizações da reserva selecionada.
 - **Conferir menores em todas as reservas**: destaca e gera o que faltar (útil depois de importar reservas antigas).
 
-**Lista de embarque:** ganhou a coluna **Menor / autorização**. Menores com autorização entregue ficam verdes; os pendentes ficam laranja com "CONFERIR AUTORIZAÇÃO".
+**Lista de embarque:** traz, para cada passageiro, **nome completo, CPF e data de nascimento** (nas primeiras colunas, fixas ao rolar), idade na viagem, RG, telefone, emergência, status/código e a coluna **Menor / autorização**. Menores com autorização entregue ficam verdes; os pendentes ficam laranja com "CONFERIR AUTORIZAÇÃO".
 
 **Regra legal:** menor de 16 anos viajando com quem não é parente próximo precisa de autorização com **firma reconhecida em cartório** (Resolução CNJ nº 295/2019). Assinatura pelo gov.br não vale. O documento avisa quando é o caso.

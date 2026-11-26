@@ -239,27 +239,31 @@ function gerarListaEmbarque() {
   var sh = ss.getSheetByName(nome);
   if (sh) sh.clear(); else sh = ss.insertSheet(nome);
   pax.sort(function (a, b) { return String(a.embarque).localeCompare(b.embarque) || String(a.nome).localeCompare(b.nome); });
-  var V = function () { return ['', '', '', '', '', '', '', '', '', '']; };
+  var NC = 11;
+  var V = function () { var l = []; for (var k = 0; k < NC; k++) l.push(''); return l; };
   var nMenores = pax.filter(function (p) { return p.menor; }).length;
   var pendentes = pax.filter(function (p) { return p.menor && !p.entregue; }).length;
-  var out = [[NOME_AGENCIA + ' — Lista de passageiros', '', '', '', '', '', '', '', '', ''],
-    ['Destino: ' + v.destino, 'Data: ' + v.data, 'Total: ' + pax.length + ' passageiros', nMenores ? 'Menores: ' + nMenores + (pendentes ? ' (' + pendentes + ' sem autorização entregue)' : ' (todas as autorizações entregues)') : '', '', '', '', '', '', ''],
-    V(),
-    ['Nº', 'Embarque', 'Nome', 'RG', 'CPF', 'Idade na viagem', 'Telefone', 'Emergência', 'Status / Código', 'Menor / autorização']];
+  var titulo = V(); titulo[0] = NOME_AGENCIA + ' — Lista de passageiros';
+  var info = V(); info[0] = 'Destino: ' + v.destino; info[1] = 'Data: ' + v.data; info[2] = 'Total: ' + pax.length + ' passageiros';
+  info[3] = nMenores ? 'Menores: ' + nMenores + (pendentes ? ' (' + pendentes + ' sem autorização entregue)' : ' (todas as autorizações entregues)') : '';
+  var out = [titulo, info, V(),
+    ['Nº', 'Embarque', 'Nome completo', 'CPF', 'Data de nascimento', 'Idade na viagem', 'RG', 'Telefone', 'Emergência', 'Status / Código', 'Menor / autorização']];
   pax.forEach(function (p, i) {
-    out.push([i + 1, p.embarque, p.nome, p.rg, p.cpf, p.idadeViagem == null ? p.idade : p.idadeViagem, p.telefone, [p.emgNome, p.emgTel].filter(String).join(' - '), p.status + ' / ' + p.codigo,
+    out.push([i + 1, p.embarque, p.nome, p.cpf, p.nascimento, p.idadeViagem == null ? p.idade : p.idadeViagem, p.rg, p.telefone, [p.emgNome, p.emgTel].filter(String).join(' - '), p.status + ' / ' + p.codigo,
       p.menor ? (p.entregue ? 'Menor · autorização entregue' : 'MENOR · CONFERIR AUTORIZAÇÃO' + (/firma reconhecida/.test(p.aut) ? ' (firma reconhecida)' : '')) : '']);
   });
   var porCidade = {};
   pax.forEach(function (p) { porCidade[p.embarque] = (porCidade[p.embarque] || 0) + 1; });
   out.push(V());
   Object.keys(porCidade).forEach(function (k) { var l = V(); l[1] = k; l[2] = porCidade[k] + ' passageiro(s)'; out.push(l); });
-  sh.getRange(1, 1, out.length, 10).setValues(out.map(function (l) { return l.map(limpa_); }));
+  sh.getRange(1, 1, out.length, NC).setNumberFormat('@');   // CPF e datas como texto (não viram número)
+  sh.getRange(1, 1, out.length, NC).setValues(out.map(function (l) { return l.map(limpa_); }));
   sh.getRange(1, 1).setFontSize(14).setFontWeight('bold');
-  sh.getRange(4, 1, 1, 10).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
-  pax.forEach(function (p, i) { if (p.menor) sh.getRange(5 + i, 1, 1, 10).setBackground(p.entregue ? '#e6f4ea' : COR_MENOR); });
+  sh.getRange(4, 1, 1, NC).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
+  pax.forEach(function (p, i) { if (p.menor) sh.getRange(5 + i, 1, 1, NC).setBackground(p.entregue ? '#e6f4ea' : COR_MENOR); });
   sh.setFrozenRows(4);
-  sh.autoResizeColumns(1, 10);
+  sh.setFrozenColumns(3);
+  sh.autoResizeColumns(1, NC);
   ss.setActiveSheet(sh);
   SpreadsheetApp.getUi().alert('Lista criada na aba "' + nome + '". Para imprimir: Arquivo › Imprimir.');
 }
@@ -505,7 +509,7 @@ function passageirosDa_(id) {
     .filter(function (l) { return l[3] === id && l[2] !== 'Cancelada'; })
     .map(function (l) {
       var iv = idadeNaViagem_(l[10], l[5]);
-      return { codigo: l[1], status: l[2], nome: l[7], rg: l[8], cpf: l[9], idade: l[11], telefone: l[12],
+      return { codigo: l[1], status: l[2], nome: l[7], rg: l[8], cpf: l[9], nascimento: l[10], idade: l[11], telefone: l[12],
         embarque: l[15], emgNome: l[16], emgTel: l[17], idadeViagem: iv,
         menor: iv != null && iv >= 0 && iv < 18, entregue: String(l[35]).toUpperCase() === 'TRUE', aut: l[27] };
     });
