@@ -20,6 +20,7 @@
   var PIX = CONFIG.pix || {};
   var PLANILHA = (CONFIG.planilhaUrl || '').trim();
   var AVISO_VAGAS = parseInt(CONFIG.avisoVagas, 10) || 10;
+  var PRAZO_SINAL_H = Number(CONFIG.prazoSinalHoras) > 0 ? Number(CONFIG.prazoSinalHoras) : 24;
   var ocupadas = {};   // id da viagem -> lugares já reservados (vem da planilha)
 
   // ---------- modo demonstração: abra o site com ?demo=1 ----------
@@ -655,6 +656,7 @@
     }
 
     var v = viagemAtual, codigo = gerarCodigo(), sinal = total() / 2;
+    var prazoSinal = new Date(Date.now() + PRAZO_SINAL_H * 3600000);
     var nomes = { pix: 'Pix', credito: 'Cartão de crédito', debito: 'Cartão de débito' };
     var pagTxt = pagamento === 'credito'
       ? 'Cartão de crédito em ' + parcelas + 'x (aprox. ' + brl(total() / parcelas) + ' cada, mais a taxa do cartão)'
@@ -702,6 +704,7 @@
     lines.push('', '*PAGAMENTO*',
       'Forma: ' + pagTxt,
       'Sinal para reservar (50%): ' + brl(sinal),
+      'Prazo para pagar o sinal: ' + ateQuando(prazoSinal) + ' (depois disso a vaga é liberada)',
       '',
       '_Reserva realizada mediante sinal de 50% do valor. Em caso de cancelamento, não haverá estorno. Pagamento concluído antes do passeio._');
     if (f.obs) lines.push('', '*Observações:* ' + f.obs);
@@ -731,11 +734,14 @@
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },
-        saude: f.saude, observacoes: f.obs, aceitaNovidades: f.novidades
+        saude: f.saude, observacoes: f.obs, aceitaNovidades: f.novidades, prazoSinal: prazoSinal.toISOString()
       };
       try {
-        fetch(PLANILHA, { method: 'POST', mode: 'no-cors', keepalive: true,
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(dados) });
+        // a planilha devolve o link de pagamento do sinal e o prazo dele
+        fetch(PLANILHA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(dados) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { if (d && d.ok) atualizaSinal({ link: d.link || '', prazo: d.prazo ? new Date(d.prazo) : null }); })
+          .catch(function () { /* sem resposta: segue com o prazo do site e o Pix */ });
       } catch (err) { /* a reserva já foi pelo WhatsApp */ }
       ocupadas[v.id] = (ocupadas[v.id] || 0) + pax;
     }
@@ -746,12 +752,12 @@
         var agora = new Date(), hora = ('0' + agora.getDate()).slice(-2) + '/' + ('0' + (agora.getMonth() + 1)).slice(-2) + ' ' +
           ('0' + agora.getHours()).slice(-2) + ':' + ('0' + agora.getMinutes()).slice(-2);
         var rDemo = reservaAut(codigo, v, f); rDemo.adultos = adultosDaReserva(v);
-        var linhasDemo = [{ hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Contratante', nome: f.nome,
+        var linhasDemo = [{ hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Contratante', nome: f.nome, status: 'Aguardando sinal', prazo: prazoSinal.toISOString(), telefone: f.tel,
           embarque: f.embarque, pagamento: pagamento === 'credito' ? 'Crédito ' + parcelas + 'x' : nomes[pagamento], total: brl(total()), sinal: brl(sinal) }];
         if (cMenor) linhasDemo[0].aut = { r: rDemo, a: cMenor, entregue: false };
         acomps.forEach(function (a) {
           var id = idade(a.nasc);
-          var linhaA = { hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Acompanhante',
+          var linhaA = { hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Acompanhante', status: 'Aguardando sinal',
             nome: a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : ''), embarque: a.dif ? a.emb.trim() : f.embarque, pagamento: '', total: '', sinal: '' };
           if (ehMenor(a, v)) linhaA.aut = { r: rDemo, a: Object.assign({}, a), entregue: false };
           linhasDemo.push(linhaA);
@@ -782,7 +788,110 @@
     $('bk-form').hidden = true; $('bk-done').hidden = false;
     booking.querySelector('[role="dialog"]').scrollTop = 0;
     $('bk-done-title').focus();
+    iniciaSinal({ codigo: codigo, destino: v.destino, sinal: sinal, prazo: prazoSinal, link: DEMO ? '#demo' : '', status: 'Aguardando sinal' });
   });
+
+  // ---------- SINAL: prazo do link de pagamento, contador e confirmação automática ----------
+  var sinalAtual = null, sinalTimer = null, sinalPoll = null;
+  function duas(n) { return ('0' + n).slice(-2); }
+  function ateQuando(d) { return 'até ' + duas(d.getDate()) + '/' + duas(d.getMonth() + 1) + ' às ' + duas(d.getHours()) + ':' + duas(d.getMinutes()); }
+  function contador(ms) {
+    if (ms <= 0) return '00:00:00';
+    var s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+    return (d ? d + 'd ' : '') + duas(h) + ':' + duas(m) + ':' + duas(s % 60);
+  }
+  function guardaPendente(st) {
+    try {
+      if (!st || st.status !== 'Aguardando sinal' || DEMO) localStorage.removeItem('boraSinalPendente');
+      else localStorage.setItem('boraSinalPendente', JSON.stringify({ codigo: st.codigo, destino: st.destino, sinal: st.sinal, prazo: st.prazo.toISOString(), link: st.link }));
+    } catch (e) { /* sem armazenamento: só não aparece o aviso ao voltar */ }
+  }
+  function statusDemo(codigo) {
+    try { var l = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]'); for (var i = 0; i < l.length; i++) if (l[i].codigo === codigo && l[i].tipo === 'Contratante') return l[i]; } catch (e) {}
+    return null;
+  }
+  function consultaStatus(st, pronto) {
+    if (DEMO) { var r = statusDemo(st.codigo); if (r) pronto({ status: r.status || 'Aguardando sinal', prazo: r.prazo ? new Date(r.prazo) : null }); return; }
+    if (!PLANILHA) return;
+    fetch(PLANILHA + (PLANILHA.indexOf('?') < 0 ? '?' : '&') + 'acao=status&codigo=' + encodeURIComponent(st.codigo))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.ok) pronto({ status: d.status, prazo: d.prazo ? new Date(d.prazo) : null, link: d.link }); })
+      .catch(function () {});
+  }
+  function pintaSinal() {
+    var st = sinalAtual; if (!st) return;
+    var box = $('bk-sinalbox'), resta = st.prazo - Date.now();
+    var pago = st.status === 'Sinal pago' || st.status === 'Pago';
+    var vencido = !pago && (st.status === 'Prazo vencido' || st.status === 'Cancelada' || resta <= 0);
+    box.style.background = pago ? '#1E5B37' : vencido ? '#7A3608' : '#06284D';
+    $('bk-sinal-titulo').textContent = pago ? 'Reserva confirmada!' : vencido ? 'Prazo do sinal encerrado' : 'Pague o sinal de ' + brl(st.sinal) + ' para garantir a sua vaga';
+    $('bk-cont').textContent = pago ? (st.status === 'Pago' ? 'Tudo pago ✓' : 'Sinal pago ✓') : contador(resta);
+    $('bk-cont-ate').textContent = pago || vencido ? '' : 'restam · ' + ateQuando(st.prazo);
+    var temLink = !!st.link && !pago && !vencido;
+    $('bk-paylink').hidden = !temLink;
+    $('bk-paylink').href = st.link && st.link !== '#demo' ? st.link : '#';
+    $('bk-paylink').textContent = 'Pagar o sinal de ' + brl(st.sinal) + ' pelo link' + (st.link === '#demo' ? ' (demonstração)' : '');
+    $('bk-demo-pagar').hidden = !DEMO || pago || vencido;
+    $('bk-sinal-status').textContent = pago
+      ? 'Recebemos o pagamento e a sua vaga está garantida. A Bora Ali manda a confirmação no WhatsApp.'
+      : vencido
+        ? 'A vaga foi liberada. Se você já pagou, mande o comprovante no WhatsApp com o código ' + st.codigo + '.'
+        : (st.link ? 'Pelo link (Pix ou cartão), a confirmação é automática e esta tela atualiza sozinha.'
+          : (String(PIX.chave || '').trim() ? 'Pague por Pix abaixo e mande o comprovante no WhatsApp.' : 'A Bora Ali manda os dados para pagamento no WhatsApp. Pague e mande o comprovante.') +
+            (PLANILHA ? ' Quando a Bora Ali confirmar, esta tela atualiza sozinha.' : ''));
+    if (pago || vencido) { clearInterval(sinalTimer); clearInterval(sinalPoll); }
+    guardaPendente(pago || vencido ? null : st);
+  }
+  function atualizaSinal(novo) {
+    if (!sinalAtual) return;
+    if (novo.link) sinalAtual.link = novo.link;
+    if (novo.prazo && !isNaN(novo.prazo)) sinalAtual.prazo = novo.prazo;
+    if (novo.status) sinalAtual.status = novo.status;
+    pintaSinal();
+  }
+  function iniciaSinal(st) {
+    sinalAtual = st;
+    clearInterval(sinalTimer); clearInterval(sinalPoll);
+    sinalTimer = setInterval(pintaSinal, 1000);
+    sinalPoll = setInterval(function () { consultaStatus(sinalAtual, atualizaSinal); }, 15000);
+    pintaSinal();
+  }
+  $('bk-paylink').addEventListener('click', function (e) {
+    if (sinalAtual && sinalAtual.link === '#demo') { e.preventDefault(); $('bk-sinal-status').textContent = 'Na versão final, este botão abre a página de pagamento do banco (Pix ou cartão). Use "Simular pagamento aprovado" para ver a confirmação.'; }
+  });
+  $('bk-demo-pagar').addEventListener('click', function () {
+    if (!sinalAtual) return;
+    try {
+      var l = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]');
+      l.forEach(function (r) { if (r.codigo === sinalAtual.codigo) { r.status = 'Sinal pago'; if (r.tipo === 'Contratante') r.pagoEm = new Date().toISOString(); } });
+      localStorage.setItem('boraDemoReservas', JSON.stringify(l));
+    } catch (e) {}
+    atualizaSinal({ status: 'Sinal pago' });
+  });
+  // a planilha de demonstração (outra aba) mudou o status
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'boraDemoReservas' && sinalAtual && DEMO) consultaStatus(sinalAtual, atualizaSinal);
+  });
+
+  // aviso no topo quando o cliente volta ao site com sinal pendente
+  (function () {
+    var p = null;
+    try { p = JSON.parse(localStorage.getItem('boraSinalPendente') || 'null'); } catch (e) {}
+    if (!p || DEMO) return;
+    var st = { codigo: p.codigo, destino: p.destino, sinal: p.sinal, prazo: new Date(p.prazo), link: p.link, status: 'Aguardando sinal' };
+    if (!(st.prazo - Date.now() > 0)) { guardaPendente(null); return; }
+    var ban = $('sinal-banner'), t;
+    function pinta() {
+      var resta = st.prazo - Date.now();
+      if (resta <= 0 || st.status !== 'Aguardando sinal') { ban.hidden = true; clearInterval(t); guardaPendente(null); return; }
+      $('sinal-banner-txt').textContent = 'Reserva ' + st.codigo + ' (' + st.destino + '): faltam ' + contador(resta) + ' para pagar o sinal de ' + brl(st.sinal) + '.';
+      $('sinal-banner-pagar').hidden = !st.link;
+      if (st.link) $('sinal-banner-pagar').href = st.link;
+    }
+    ban.hidden = false; pinta(); t = setInterval(pinta, 1000);
+    consultaStatus(st, function (d) { if (d.status) st.status = d.status; if (d.link) st.link = d.link; pinta(); });
+    $('sinal-banner-fechar').addEventListener('click', function () { ban.hidden = true; clearInterval(t); });
+  })();
 
   $('bk-aut-list').addEventListener('click', function (e) {
     var b = e.target.closest('[data-aut]'); if (!b || !ultimaReserva) return;

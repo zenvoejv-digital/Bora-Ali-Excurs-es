@@ -78,3 +78,27 @@ Outros itens do menu *Menores de idade*:
 **Lista de embarque:** traz, para cada passageiro, **nome completo, CPF e data de nascimento** (nas primeiras colunas, fixas ao rolar), idade na viagem, RG, telefone, emergência, status/código e a coluna **Menor / autorização**. Menores com autorização entregue ficam verdes; os pendentes ficam laranja com "CONFERIR AUTORIZAÇÃO".
 
 **Regra legal:** menor de 16 anos viajando com quem não é parente próximo precisa de autorização com **firma reconhecida em cartório** (Resolução CNJ nº 295/2019). Assinatura pelo gov.br não vale. O documento avisa quando é o caso.
+
+## Sinal: prazo, link de pagamento e confirmação
+
+**Prazo do sinal = prazo do link de pagamento.** Cada reserva nasce com um prazo (padrão: 24 horas, em `PRAZO_SINAL_HORAS` no código e `prazoSinalHoras` no `assets/js/data.js`, use o mesmo número nos dois). A data fica na coluna **AM (Prazo do sinal)**. No site, o cliente vê um **contador** depois de reservar, e um aviso no topo se voltar ao site com o sinal pendente.
+
+**Pagamento automático (Mercado Pago):**
+1. No Mercado Pago da agência: *Seu negócio › Configurações › Credenciais › Credenciais de produção* e copie o **Access Token**.
+2. Na planilha: menu **Bora Ali › Pagamentos do sinal › Ligar Mercado Pago** e cole o token. Ele fica guardado em segredo no projeto, não aparece na planilha.
+3. Menu **Bora Ali › Pagamentos do sinal › Conferir sozinho a cada 10 minutos** (uma vez só).
+4. Publique o App da Web de novo (Implantar › Gerenciar implantações › editar › Nova versão), para o Mercado Pago conseguir avisar a planilha.
+
+A partir daí, cada reserva recebe um **link de pagamento do sinal** (Pix ou cartão em até 12x, sem boleto) que **vence junto com o prazo**. O link fica na coluna **AN** e aparece para o cliente no site. Quando o pagamento é aprovado, a reserva vira **Sinal pago** sozinha (ou **Pago**, se pagou o total), a data entra na coluna **AO** e o contador do cliente vira "Reserva confirmada".
+
+**Cliente mandou o comprovante no WhatsApp (Pix direto, transferência...):** confira o comprovante e mude o **Status** para **Sinal pago** (ou **Pago**). Na hora:
+- todos os passageiros da reserva ficam com o mesmo status;
+- a data do pagamento entra na coluna AO;
+- a coluna **AP (Confirmação ao cliente)** ganha o link **Enviar confirmação no WhatsApp**, com a mensagem pronta ("reserva confirmada", código, destino, data, embarque e passageiros);
+- o contador do cliente no site para e mostra "Reserva confirmada".
+
+Mudar o status na linha do **contratante** vale para a reserva inteira (por exemplo, Cancelada). Na linha de um acompanhante, só aquela pessoa muda (exceto Sinal pago/Pago, que confirmam a reserva toda).
+
+**Prazo vencido:** se o prazo passar sem pagamento, a reserva vira **Prazo vencido** e **a vaga volta para o site** (para não liberar sozinho, mude `LIBERAR_VAGA_AO_VENCER` para `false`). Se o cliente pagar depois, a planilha marca o pagamento e deixa um aviso nas Observações para conferir se ainda há vaga. Para conferir na hora: **Bora Ali › Pagamentos do sinal › Conferir pagamentos e prazos agora**.
+
+Outro banco ou maquininha (InfinitePay, PagBank, Asaas...) também pode ser ligado se tiver API de link de pagamento. Sem integração, tudo funciona com o prazo, o contador e a confirmação manual pelo comprovante.

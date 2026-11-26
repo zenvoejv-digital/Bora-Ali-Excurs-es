@@ -7,7 +7,11 @@
 // ====== AJUSTES ======
 var LINK_AVALIACAO = '';           // link de avaliação do Google (Perfil da Empresa › Pedir avaliações)
 var NOME_AGENCIA = 'Bora Ali Excursões';
-var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Cancelada'];
+var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Prazo vencido', 'Cancelada'];
+// SINAL: o prazo do sinal é o prazo do link de pagamento. Passou do prazo sem pagar, a reserva vira "Prazo vencido" e a vaga volta para o site.
+var PRAZO_SINAL_HORAS = 24;
+var LIBERAR_VAGA_AO_VENCER = true;
+// O Access Token do Mercado Pago NÃO fica aqui: use o menu Bora Ali › Pagamentos › Ligar Mercado Pago (fica guardado em segredo no projeto).
 // Risco de perda do cliente: dias desde a última reserva
 var DIAS_ATIVO = 90;       // até 90 dias: Ativo
 var DIAS_ATENCAO = 180;    // 91 a 180: Atenção
@@ -27,7 +31,10 @@ var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 
   'Necessidades / saúde', 'Pagamento', 'Parcelas', 'Total da reserva', 'Sinal (50%)', 'Observações', 'WhatsApp que recebeu',
   'Aceita novidades', 'Valor do passageiro', 'Autorização do menor',
   'Contratante é (menor)', 'Responsável (nome)', 'Responsável é', 'Responsável (CPF)', 'Responsável (RG)', 'Responsável (telefone)',
-  'Link da autorização', 'Autorização entregue', 'Responsável (nascimento)', 'Responsável (e-mail)'];
+  'Link da autorização', 'Autorização entregue', 'Responsável (nascimento)', 'Responsável (e-mail)',
+  'Prazo do sinal', 'Link de pagamento', 'Sinal pago em', 'Confirmação ao cliente'];
+var COL_PRAZO = 39, COL_LINKPAG = 40, COL_PAGOEM = 41, COL_CONFIRMA = 42;
+var SEM_VAGA = ['Cancelada', 'Prazo vencido'];   // status que não ocupam lugar no ônibus
 // colunas (1 = A) usadas pelas autorizações
 var COL_AUT = 28, COL_VINC = 29, COL_LINK = 35, COL_ENTREGUE = 36;
 var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Parente', outro: 'Outra pessoa',
@@ -52,6 +59,10 @@ function onOpen() {
       .addItem('Gerar/atualizar autorização (linhas selecionadas)', 'gerarAutorizacaoSelecionada')
       .addItem('Conferir menores em todas as reservas', 'atualizarMenores')
       .addItem('Refazer autorizações sozinho ao editar', 'ativarAutorizacaoAutomatica'))
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('Pagamentos do sinal')
+      .addItem('Ligar Mercado Pago (link de pagamento)', 'configurarMercadoPago')
+      .addItem('Conferir pagamentos e prazos agora', 'conferirPagamentosMenu')
+      .addItem('Conferir sozinho a cada 10 minutos', 'ativarConferenciaPagamentos'))
     .addItem('Mensagens pós-viagem (avaliação)', 'mensagensPosViagem')
     .addToUi();
 }
@@ -103,7 +114,7 @@ function criarAbaBusca_() {
   var col = 'Reservas!';
   var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
   b.getRange('A5').setFormula(
-    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AL,' +
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AP,' +
     '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
     '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
     '"Nada encontrado. Confira o código ou tente parte do nome."))');
@@ -157,7 +168,7 @@ function buscarReserva() {
   html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
   var ss = SpreadsheetApp.getActive();
   ss.setActiveSheet(r);
-  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AL' + a.linha; })).activate();
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AP' + a.linha; })).activate();
   ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
     achadas.length + ' linha(s) encontrada(s)');
 }
@@ -169,13 +180,21 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    var d = JSON.parse(e.postData.contents);
+    var d = {};
+    try { d = JSON.parse(e.postData.contents); } catch (errJson) { d = {}; }
+    // aviso do banco (Mercado Pago) de que um pagamento mudou
+    if (ehAvisoPagamento_(e, d)) { receberAvisoPagamento_(e, d); return json_({ ok: true }); }
     if (d.tipo !== 'reserva' || !/^BA-[A-Z0-9]{4,8}$/.test(String(d.codigo)) || !d.viagem || !d.contratante) return json_({ ok: false });
     var sh = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
     // planilhas criadas antes de novas colunas ganham o cabeçalho que falta
     if (sh.getRange(1, CAB_RESERVAS.length).getValue() !== CAB_RESERVAS[CAB_RESERVAS.length - 1]) {
       sh.getRange(1, 1, 1, CAB_RESERVAS.length).setValues([CAB_RESERVAS]).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
+      sh.getRange(2, 3, sh.getMaxRows() - 1, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(STATUS, true).build());
     }
+    // prazo do sinal = prazo do link de pagamento
+    var agoraMs = Date.now(), limite = agoraMs + PRAZO_SINAL_HORAS * 3600000;
+    var pedido = Date.parse(d.prazoSinal || '');
+    var prazo = new Date(pedido > agoraMs && pedido <= limite + 600000 ? Math.min(pedido, limite) : limite);
     var novidades = d.aceitaNovidades ? 'Sim' : 'Não';
     var agora = new Date();
     var v = d.viagem, c = d.contratante, p = d.pagamento || {};
@@ -183,16 +202,22 @@ function doPost(e) {
     var linhas = [];
     linhas.push(base.concat(['Contratante', c.nome, c.rg, c.cpf, c.nascimento, c.idade, c.telefone, c.email, c.endereco,
       c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, c.autorizacao || ''
-      ].concat(colunasMenor_(c.menor))));
+      ].concat(colunasMenor_(c.menor), [prazo, '', ''])));
     (d.acompanhantes || []).slice(0, 20).forEach(function (a) {
       linhas.push(base.concat(['Acompanhante de ' + c.nome, a.nome, a.rg, a.cpf, a.nascimento, a.idade, c.telefone, '', '',
-        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor))));
+        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor), ['', '', ''])));
     });
     linhas = linhas.map(function (l) { return l.map(limpa_); });
-    sh.getRange(sh.getLastRow() + 1, 1, linhas.length, CAB_RESERVAS.length).setValues(linhas);
+    var linhaContratante = sh.getLastRow() + 1;
+    sh.getRange(linhaContratante, 1, linhas.length, CAB_RESERVAS.length).setValues(linhas);
+    sh.getRange(linhaContratante, COL_PRAZO).setNumberFormat('dd/mm/yyyy hh:mm');
+    // link de pagamento do sinal, que vence junto com o prazo
+    var linkPag = '';
+    try { linkPag = criarLinkPagamento_(d, Number(p.sinal) || 0, prazo); } catch (errLink) { linkPag = ''; }
+    if (linkPag) sh.getRange(linhaContratante, COL_LINKPAG).setValue(linkPag);
     // menores: destaca e gera a autorização em PDF no Drive
     try { prepararMenores_(sh, [d.codigo], false); } catch (errMenor) { /* a reserva já foi gravada; a autorização pode ser gerada pelo menu */ }
-    return json_({ ok: true });
+    return json_({ ok: true, codigo: d.codigo, prazo: prazo.toISOString(), link: linkPag });
   } catch (err) {
     return json_({ ok: false });
   } finally {
@@ -203,6 +228,8 @@ function doPost(e) {
 // ---------- entrega agenda e vagas ocupadas para o site (sem dados pessoais) ----------
 function doGet(e) {
   var ss = SpreadsheetApp.getActive();
+  var prm = (e && e.parameter) || {};
+  if (prm.acao === 'status') return json_(statusDaReserva_(String(prm.codigo || '')));
   var viagens = [];
   var a = ss.getSheetByName(ABA_AGENDA);
   if (a && a.getLastRow() > 1) {
@@ -222,7 +249,7 @@ function doGet(e) {
   var r = ss.getSheetByName(ABA_RESERVAS);
   if (r && r.getLastRow() > 1) {
     r.getRange(2, 3, r.getLastRow() - 1, 2).getValues().forEach(function (x) {
-      if (x[0] === 'Cancelada' || !x[1]) return;
+      if (SEM_VAGA.indexOf(x[0]) >= 0 || !x[1]) return;
       ocupadas[x[1]] = (ocupadas[x[1]] || 0) + 1;
     });
   }
@@ -280,7 +307,7 @@ function mensagensPosViagem() {
   if (sh) sh.clear(); else sh = ss.insertSheet(nome);
   var out = [['Nome', 'Telefone', 'Enviar']];
   dados.forEach(function (l) {
-    if (l[3] !== v.id || l[6] !== 'Contratante' || l[2] === 'Cancelada') return;
+    if (l[3] !== v.id || l[6] !== 'Contratante' || SEM_VAGA.indexOf(l[2]) >= 0) return;
     var primeiro = String(l[7]).split(' ')[0];
     var msg = 'Oi, ' + primeiro + '! Aqui é da ' + NOME_AGENCIA + '. Obrigado por viajar com a gente para ' + v.destino + '! 🧡' +
       (LINK_AVALIACAO ? ' Se puder, deixa sua avaliação, ajuda muito: ' + LINK_AVALIACAO : '') + ' Bora para a próxima?';
@@ -506,7 +533,7 @@ function passageirosDa_(id) {
   var r = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
   if (!r || r.getLastRow() < 2) return [];
   return r.getRange(2, 1, r.getLastRow() - 1, CAB_RESERVAS.length).getDisplayValues()
-    .filter(function (l) { return l[3] === id && l[2] !== 'Cancelada'; })
+    .filter(function (l) { return l[3] === id && SEM_VAGA.indexOf(l[2]) < 0; })
     .map(function (l) {
       var iv = idadeNaViagem_(l[10], l[5]);
       return { codigo: l[1], status: l[2], nome: l[7], rg: l[8], cpf: l[9], nascimento: l[10], idade: l[11], telefone: l[12],
@@ -813,3 +840,219 @@ var AUT_ = (function () {
     '.ap-note{margin-top:22px !important;border:1px solid #F47B20;background:#FFF8F1;padding:8px 10px;font-size:10.5pt}';
   return { VINCULOS: VINCULOS, PAPEIS: PAPEIS, VIAJA_COM: VIAJA_COM, idade: idade, precisaResp: precisaResp, exigeFirma: exigeFirma, texto: texto, html: html, CSS: CSS };
 })();
+
+// ======================================================================
+// SINAL: link de pagamento (Mercado Pago), prazo e baixa automática
+// ======================================================================
+function tokenMP_() { return PropertiesService.getScriptProperties().getProperty('MP_ACCESS_TOKEN') || ''; }
+function dataMP_(d) { return Utilities.formatDate(d, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"); }
+
+// Cria o link de pagamento do sinal. Vence no prazo do sinal. Sem Mercado Pago ligado, devolve ''.
+function criarLinkPagamento_(d, sinal, prazo) {
+  var token = tokenMP_();
+  if (!token || !(sinal > 0)) return '';
+  var c = d.contratante || {}, v = d.viagem || {};
+  var nomes = String(c.nome || '').trim().split(/\s+/);
+  var corpo = {
+    items: [{ id: d.codigo, title: 'Sinal 50% - ' + v.destino + ' ' + v.data + ' (' + d.codigo + ')', quantity: 1, currency_id: 'BRL', unit_price: Math.round(sinal * 100) / 100 }],
+    payer: { name: nomes[0] || '', surname: nomes.slice(1).join(' '), email: c.email || undefined,
+      identification: { type: 'CPF', number: String(c.cpf || '').replace(/\D/g, '') } },
+    external_reference: d.codigo,
+    notification_url: ScriptApp.getService().getUrl() + '?origem=mp',
+    expires: true, expiration_date_from: dataMP_(new Date()), expiration_date_to: dataMP_(prazo),
+    date_of_expiration: dataMP_(prazo),
+    payment_methods: { installments: 12, excluded_payment_types: [{ id: 'ticket' }] },   // sem boleto (demora dias para cair)
+    statement_descriptor: 'BORA ALI'
+  };
+  var r = UrlFetchApp.fetch('https://api.mercadopago.com/checkout/preferences', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + token }, payload: JSON.stringify(corpo)
+  });
+  if (r.getResponseCode() >= 300) return '';
+  var j = JSON.parse(r.getContentText());
+  return j.init_point || '';
+}
+
+// Aviso automático do Mercado Pago ("notification_url")
+function ehAvisoPagamento_(e, d) {
+  var prm = (e && e.parameter) || {};
+  return prm.origem === 'mp' || prm.topic === 'payment' || prm.type === 'payment' || d.type === 'payment' || /^payment\./.test(d.action || '');
+}
+function receberAvisoPagamento_(e, d) {
+  var prm = (e && e.parameter) || {};
+  var id = (d.data && d.data.id) || prm['data.id'] || prm.id;
+  if (!id || !tokenMP_()) return;
+  var pg = consultarPagamentoMP_(id);   // sempre confere direto no Mercado Pago (o aviso em si não é confiável)
+  if (pg && pg.status === 'approved' && pg.external_reference) marcarSinalPago_(pg.external_reference, pg.transaction_amount, pg.date_approved);
+}
+function consultarPagamentoMP_(id) {
+  var r = UrlFetchApp.fetch('https://api.mercadopago.com/v1/payments/' + encodeURIComponent(id), {
+    muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + tokenMP_() } });
+  return r.getResponseCode() === 200 ? JSON.parse(r.getContentText()) : null;
+}
+function pagamentoAprovadoDe_(codigo) {
+  var r = UrlFetchApp.fetch('https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&external_reference=' + encodeURIComponent(codigo), {
+    muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + tokenMP_() } });
+  if (r.getResponseCode() !== 200) return null;
+  var lista = (JSON.parse(r.getContentText()).results) || [];
+  for (var i = 0; i < lista.length; i++) if (lista[i].status === 'approved') return lista[i];
+  return null;
+}
+
+// Marca todas as linhas da reserva como "Sinal pago" (ou "Pago", se pagou o total)
+function marcarSinalPago_(codigo, valor, quando) {
+  var sh = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
+  if (!sh || sh.getLastRow() < 2) return false;
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    var dados = sh.getRange(2, 1, sh.getLastRow() - 1, CAB_RESERVAS.length).getValues();
+    var total = 0, achou = false;
+    dados.forEach(function (l) { if (l[1] === codigo && /^Contratante/.test(l[6])) total = numero_(l[21]); });
+    var novo = valor && total && Number(valor) >= total - 0.01 ? 'Pago' : 'Sinal pago';
+    var dataPg = quando ? new Date(quando) : new Date();
+    dados.forEach(function (l, i) {
+      if (l[1] !== codigo) return;
+      achou = true;
+      if (l[2] === 'Aguardando sinal' || l[2] === 'Prazo vencido') {
+        if (l[2] === 'Prazo vencido') sh.getRange(i + 2, 24).setValue(String(l[23] || '') + ' [pagou depois do prazo: conferir se ainda há vaga]');
+        sh.getRange(i + 2, 3).setValue(novo);
+      }
+      if (/^Contratante/.test(l[6])) sh.getRange(i + 2, COL_PAGOEM).setValue(dataPg).setNumberFormat('dd/mm/yyyy hh:mm');
+    });
+    if (achou) confirmarReserva_(sh, codigo, novo);
+    return achou;
+  } finally { lock.releaseLock(); }
+}
+
+// Confere reservas aguardando sinal: pagamento aprovado vira "Sinal pago"; prazo vencido libera a vaga.
+function conferirPagamentos(silencioso) {
+  var sh = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
+  var res = { pagos: [], vencidos: [] };
+  if (!sh || sh.getLastRow() < 2) return res;
+  var dados = sh.getRange(2, 1, sh.getLastRow() - 1, CAB_RESERVAS.length).getValues();
+  var agora = new Date(), temMP = !!tokenMP_();
+  dados.forEach(function (l, i) {
+    if (!/^Contratante/.test(l[6]) || l[2] !== 'Aguardando sinal') return;
+    var codigo = l[1];
+    if (temMP) {
+      var pg = pagamentoAprovadoDe_(codigo);
+      if (pg) { marcarSinalPago_(codigo, pg.transaction_amount, pg.date_approved); res.pagos.push(codigo); return; }
+    }
+    var prazo = l[COL_PRAZO - 1];
+    if (LIBERAR_VAGA_AO_VENCER && prazo instanceof Date && prazo < agora) {
+      dados.forEach(function (o, k) { if (o[1] === codigo && o[2] === 'Aguardando sinal') sh.getRange(k + 2, 3).setValue('Prazo vencido'); });
+      res.vencidos.push(codigo);
+    }
+  });
+  return res;
+}
+function conferirPagamentosMenu() {
+  var r = conferirPagamentos(false);
+  SpreadsheetApp.getUi().alert((tokenMP_() ? '' : 'Mercado Pago ainda não ligado: só os prazos foram conferidos.\n\n') +
+    'Sinais pagos agora: ' + (r.pagos.join(', ') || 'nenhum') + '\nPrazos vencidos (vaga liberada): ' + (r.vencidos.join(', ') || 'nenhum'));
+}
+function conferirPagamentosAgendado() { conferirPagamentos(true); }
+function ativarConferenciaPagamentos() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'conferirPagamentosAgendado') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('conferirPagamentosAgendado').timeBased().everyMinutes(10).create();
+  SpreadsheetApp.getUi().alert('Pronto! A cada 10 minutos a planilha confere os pagamentos no Mercado Pago e libera as vagas com prazo vencido.');
+}
+function configurarMercadoPago() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt('Ligar Mercado Pago',
+    'Cole o Access Token de PRODUÇÃO (Mercado Pago › Seu negócio › Configurações › Credenciais).\nEle fica guardado em segredo no projeto, fora da planilha. Para desligar, deixe em branco.',
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var t = r.getResponseText().trim(), props = PropertiesService.getScriptProperties();
+  if (!t) { props.deleteProperty('MP_ACCESS_TOKEN'); ui.alert('Mercado Pago desligado. As reservas continuam com prazo do sinal, sem link automático.'); return; }
+  props.setProperty('MP_ACCESS_TOKEN', t);
+  var teste = UrlFetchApp.fetch('https://api.mercadopago.com/users/me', { muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + t } });
+  ui.alert(teste.getResponseCode() === 200 ? 'Mercado Pago ligado! Cada nova reserva recebe um link de pagamento do sinal, que vence no prazo de ' + PRAZO_SINAL_HORAS + ' horas.'
+    : 'O Mercado Pago não aceitou esse token (código ' + teste.getResponseCode() + '). Confira se é o Access Token de produção.');
+}
+
+// Situação de uma reserva para o contador do site (só status, prazo e link: nenhum dado pessoal)
+function statusDaReserva_(codigo) {
+  if (!/^BA-[A-Z0-9]{4,8}$/.test(codigo)) return { ok: false };
+  var sh = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
+  if (!sh || sh.getLastRow() < 2) return { ok: false };
+  var dados = sh.getRange(2, 1, sh.getLastRow() - 1, CAB_RESERVAS.length).getValues(), l = null;
+  for (var i = 0; i < dados.length; i++) if (dados[i][1] === codigo && /^Contratante/.test(dados[i][6])) { l = dados[i]; break; }
+  if (!l) return { ok: false };
+  // confere no banco no máximo a cada 30 segundos por reserva
+  if (l[2] === 'Aguardando sinal' && tokenMP_()) {
+    var cache = CacheService.getScriptCache(), chave = 'st-' + codigo;
+    if (!cache.get(chave)) {
+      cache.put(chave, '1', 30);
+      var pg = pagamentoAprovadoDe_(codigo);
+      if (pg) { marcarSinalPago_(codigo, pg.transaction_amount, pg.date_approved); l[2] = 'Sinal pago'; }
+    }
+  }
+  var prazo = l[COL_PRAZO - 1];
+  return { ok: true, codigo: codigo, status: l[2], prazo: prazo instanceof Date ? prazo.toISOString() : '', link: l[COL_LINKPAG - 1] || '' };
+}
+
+// ======================================================================
+// CONFIRMAÇÃO MANUAL: o cliente manda o comprovante no WhatsApp e o gestor muda o status
+// ======================================================================
+// Gatilho simples do Google (funciona sozinho, sem instalar): ao mudar o Status de uma linha,
+//  - "Sinal pago" ou "Pago": confirma a reserva inteira, registra a data e prepara a mensagem de confirmação;
+//  - qualquer status na linha do contratante vale para todos os passageiros da reserva.
+function onEdit(e) {
+  if (!e || !e.range) return;
+  var sh = e.range.getSheet();
+  if (sh.getName() !== ABA_RESERVAS || e.range.getColumn() > 3 || e.range.getLastColumn() < 3) return;
+  var r0 = Math.max(2, e.range.getRow()), r1 = e.range.getLastRow();
+  if (r1 < 2) return;
+  var linhas = sh.getRange(r0, 1, r1 - r0 + 1, 7).getValues();
+  var feitos = {};
+  linhas.forEach(function (l) {
+    var codigo = l[1], status = l[2];
+    if (!codigo || feitos[codigo] || STATUS.indexOf(status) < 0) return;
+    if (status === 'Sinal pago' || status === 'Pago' || /^Contratante/.test(l[6])) {
+      feitos[codigo] = 1;
+      aplicarStatusNaReserva_(sh, codigo, status);
+    }
+  });
+  var cods = Object.keys(feitos);
+  if (cods.length) SpreadsheetApp.getActive().toast(cods.map(function (c) { return c; }).join(', ') +
+    (/^(Sinal pago|Pago)$/.test(linhas[0][2]) ? ': reserva confirmada. A mensagem para o cliente está na coluna "Confirmação ao cliente".' : ': status aplicado a todos os passageiros.'), 'Bora Ali', 6);
+}
+
+function aplicarStatusNaReserva_(sh, codigo, status) {
+  var n = sh.getLastRow() - 1;
+  var dados = sh.getRange(2, 1, n, CAB_RESERVAS.length).getValues();
+  var pago = status === 'Sinal pago' || status === 'Pago';
+  dados.forEach(function (l, i) {
+    if (l[1] !== codigo) return;
+    // pagamento confirmado não "ressuscita" passageiro cancelado à parte
+    if (l[2] !== status && !(pago && l[2] === 'Cancelada' && !/^Contratante/.test(l[6]))) sh.getRange(i + 2, 3).setValue(status);
+    if (pago && /^Contratante/.test(l[6])) {
+      if (!l[COL_PAGOEM - 1]) sh.getRange(i + 2, COL_PAGOEM).setValue(new Date()).setNumberFormat('dd/mm/yyyy hh:mm');
+      if (l[2] === 'Prazo vencido') sh.getRange(i + 2, 24).setValue(String(l[23] || '') + ' [pago depois do prazo: conferir se ainda há vaga]');
+    }
+  });
+  if (pago) confirmarReserva_(sh, codigo, status);
+}
+
+// Prepara, na linha do contratante, o link do WhatsApp com a confirmação da reserva para o cliente
+function confirmarReserva_(sh, codigo, status) {
+  var dados = sh.getRange(2, 1, sh.getLastRow() - 1, CAB_RESERVAS.length).getDisplayValues();
+  var c = null, nomes = [], linhaC = 0;
+  dados.forEach(function (l, i) {
+    if (l[1] !== codigo || l[2] === 'Cancelada') return;
+    if (/^Contratante/.test(l[6])) { c = l; linhaC = i + 2; }
+    nomes.push(l[7]);
+  });
+  if (!c) return;
+  var tel = String(c[12]).replace(/\D/g, '');
+  if (tel.length >= 10 && tel.length <= 11) tel = '55' + tel;
+  var primeiro = String(c[7]).trim().split(/\s+/)[0];
+  var texto = 'Olá, ' + primeiro + '! Aqui é da ' + NOME_AGENCIA + ' 💙🧡\n\n' +
+    (status === 'Pago' ? 'Recebemos o pagamento total' : 'Recebemos o seu sinal') + ' e a sua *reserva está confirmada!* ✅\n\n' +
+    '*Código:* ' + codigo + '\n*Destino:* ' + c[4] + '\n*Data:* ' + c[5] + '\n*Embarque:* ' + c[15] + '\n*Passageiros:* ' + nomes.join(', ') +
+    (status === 'Pago' ? '' : '\n\nO restante (' + brl_(numero_(c[21]) - numero_(c[22])) + ') deve ser pago antes do passeio.') +
+    '\nO horário de embarque chega por aqui antes da viagem. Qualquer dúvida, é só chamar!';
+  var url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(texto);
+  sh.getRange(linhaC, COL_CONFIRMA).setRichTextValue(SpreadsheetApp.newRichTextValue().setText('Enviar confirmação no WhatsApp').setLinkUrl(url).build());
+}

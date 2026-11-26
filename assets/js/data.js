@@ -44,6 +44,11 @@ window.BORA_CONFIG = {
   // Link para avaliar a agência no Google (Perfil da Empresa › Pedir avaliações). Vazio = não mostra.
   linkAvaliacao: "",
 
+  // SINAL: prazo para pagar o sinal de 50% (é o prazo do link de pagamento).
+  // O cliente vê um contador; com a planilha ligada ao Mercado Pago, o pagamento confirma a reserva sozinho.
+  // Passou do prazo sem pagar, a planilha libera a vaga. Use o mesmo valor de PRAZO_SINAL_HORAS no Apps Script.
+  prazoSinalHoras: 24,
+
   // Mostrar "Restam X vagas" quando sobrarem até este número de lugares
   avisoVagas: 10,
 

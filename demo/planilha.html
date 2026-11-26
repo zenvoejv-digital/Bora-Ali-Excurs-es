@@ -31,7 +31,7 @@
 </div>
 <p id="sem-teste" style="margin: 0; background: #EEF5FC; border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 1.5; color: #33445A">Para ver uma reserva sua chegando aqui: abra o <a href="/?demo=1" style="color: #0A4D8C; font-weight: 700">site em modo demonstração</a>, agende qualquer viagem e volte para esta página <strong>no mesmo navegador</strong>. Ela aparece no topo, marcada como NOVA.</p>
 <p id="aviso-teste" role="status" hidden style="margin: 0; background: #E6F4EA; border: 1.5px solid #2E8B57; color: #1E5B37; border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600"></p>
-<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #55657A">Chega sozinha a cada reserva. O status é escolhido numa lista: Aguardando sinal, Sinal pago, Pago ou Cancelada. Cancelada devolve a vaga para o site. As colunas de RG, CPF, nascimento, endereço e emergência também ficam na planilha e foram omitidas aqui.</p>
+<p style="margin: 0; font-size: 15px; line-height: 1.5; color: #55657A">Chega sozinha a cada reserva, com o <strong>prazo do sinal</strong> (o mesmo do link de pagamento). Pagou pelo link: vira <strong>Sinal pago</strong> sozinho. Cliente mandou o comprovante no WhatsApp: mude o status para <strong>Sinal pago</strong> e a reserva inteira é confirmada, com a mensagem pronta para o cliente. Prazo vencido sem pagamento: a vaga volta para o site. As colunas de RG, CPF, nascimento, endereço e emergência também ficam na planilha e foram omitidas aqui.</p>
 <div style="display: flex; flex-direction: column; gap: 6px">
 <label for="busca-reserva" style="font-size: 14px; font-weight: 700; color: #0F1B2D">Buscar reserva</label>
 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
@@ -77,15 +77,42 @@
   var tb = document.getElementById('linhas-reservas');
   // coluna nova na tabela
   var trHead = document.querySelector('#tabela-reservas thead tr');
-  trHead.insertAdjacentHTML('beforeend', '<th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Menor / autorização</th>');
-  Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) { tr.insertAdjacentHTML('beforeend', '<td style="' + td + '; color: #8496AB">-</td>'); });
+  var TH = '<th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">';
+  trHead.insertAdjacentHTML('beforeend', TH + 'Prazo do sinal / confirmação</th>' + TH + 'Menor / autorização</th>');
+  Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) { tr.insertAdjacentHTML('beforeend', '<td style="' + td + '; color: #8496AB">-</td><td style="' + td + '; color: #8496AB">-</td>'); });
+  var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Prazo vencido', 'Cancelada'];
+  var COR = { 'Aguardando sinal': ['#FFF1E6', '#7A3608'], 'Sinal pago': ['#E2F1FC', '#0A4D8C'], 'Pago': ['#E6F4EA', '#1E5B37'], 'Prazo vencido': ['#FDE2E2', '#8A1C1C'], 'Cancelada': ['#F1F1F1', '#55657A'] };
+  function duas(n) { return ('0' + n).slice(-2); }
+  function contador(ms) { if (ms <= 0) return '00:00:00'; var s = Math.floor(ms / 1000), d = Math.floor(s / 86400); return (d ? d + 'd ' : '') + duas(Math.floor(s % 86400 / 3600)) + ':' + duas(Math.floor(s % 3600 / 60)) + ':' + duas(s % 60); }
+  function dataHora(iso) { var d = new Date(iso); return duas(d.getDate()) + '/' + duas(d.getMonth() + 1) + ' ' + duas(d.getHours()) + ':' + duas(d.getMinutes()); }
 
   function ler() { try { return JSON.parse(localStorage.getItem('boraDemoReservas') || '[]'); } catch (e) { return []; } }
   function gravar(l) { try { localStorage.setItem('boraDemoReservas', JSON.stringify(l)); } catch (e) {} }
   var lista = ler();
   if (!lista.length) return;
   document.getElementById('sem-teste').hidden = true;
-  var status = '<span style="background: #FFF1E6; color: #7A3608; font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px">Aguardando sinal</span>';
+  function celulaStatus(r, i) {
+    var st = r.status || 'Aguardando sinal', c = COR[st] || COR['Aguardando sinal'];
+    return '<select data-status="' + i + '" aria-label="Status da reserva ' + esc(r.codigo) + '" style="font-family: inherit; font-weight: 700; font-size: 13px; padding: 5px 8px; border-radius: 999px; border: 1.5px solid ' + c[1] + '; background: ' + c[0] + '; color: ' + c[1] + '; cursor: pointer">' +
+      STATUS.map(function (x) { return '<option' + (x === st ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>';
+  }
+  function mensagemConfirmacao(r) {
+    var nomes = lista.filter(function (o) { return o.codigo === r.codigo && o.status !== 'Cancelada'; }).map(function (o) { return o.nome; });
+    var t = 'Olá, ' + String(r.nome).split(' ')[0] + '! Aqui é da Bora Ali Excursões 💙🧡\n\n' + (r.status === 'Pago' ? 'Recebemos o pagamento total' : 'Recebemos o seu sinal') +
+      ' e a sua *reserva está confirmada!* ✅\n\n*Código:* ' + r.codigo + '\n*Destino:* ' + r.destino + '\n*Data:* ' + r.data + '\n*Embarque:* ' + r.embarque + '\n*Passageiros:* ' + nomes.join(', ');
+    var tel = String(r.telefone || '').replace(/\D/g, ''); if (tel.length >= 10 && tel.length <= 11) tel = '55' + tel;
+    return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(t);
+  }
+  function celulaPrazo(r, i) {
+    if (r.tipo !== 'Contratante' || !r.prazo) return '<td style="' + td + '; color: #8496AB">-</td>';
+    var st = r.status || 'Aguardando sinal';
+    if (st === 'Sinal pago' || st === 'Pago') return '<td style="' + td + '"><div style="display: flex; align-items: center; gap: 8px"><span style="color: #1E5B37; font-weight: 700">Pago em ' + dataHora(r.pagoEm || new Date().toISOString()) + '</span>' +
+      '<a href="' + mensagemConfirmacao(r) + '" target="_blank" rel="noopener" style="' + btn + '; text-decoration: none; display: inline-flex; align-items: center; background: #25D366; border-color: #25D366; color: #06284D">Enviar confirmação no WhatsApp</a></div></td>';
+    if (st === 'Prazo vencido') return '<td style="' + td + '; color: #8A1C1C; font-weight: 700">Venceu ' + dataHora(r.prazo) + ' · vaga liberada</td>';
+    if (st === 'Cancelada') return '<td style="' + td + '; color: #8496AB">-</td>';
+    return '<td style="' + td + '"><div style="display: flex; align-items: center; gap: 8px"><span data-prazo="' + esc(r.prazo) + '" style="font-weight: 800; font-variant-numeric: tabular-nums; color: #7A3608">' + contador(new Date(r.prazo) - Date.now()) + '</span>' +
+      '<span style="font-size: 12px; color: #55657A">até ' + dataHora(r.prazo) + '</span><button type="button" data-vencer="' + i + '" style="' + btn + '; font-size: 12px; min-height: 30px; padding: 4px 10px">Simular prazo vencido</button></div></td>';
+  }
   var novo = '<span style="background: #F47B20; color: #06284D; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 999px; margin-left: 6px">NOVA</span>';
   var btn = 'font-family: inherit; cursor: pointer; border: 1.5px solid #0A4D8C; background: #FFFFFF; color: #0A4D8C; font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 999px; min-height: 36px';
 
@@ -108,13 +135,26 @@
       return '<tr data-demo style="background: ' + (menor ? '#FFE8D6' : '#FFF8F0') + '">' +
         '<td style="' + td + '">' + esc(r.hora) + '</td>' +
         '<td style="' + td + '"><strong>' + esc(r.codigo) + '</strong>' + novo + '</td>' +
-        '<td style="' + td + '">' + status + '</td>' +
+        '<td style="' + td + '">' + celulaStatus(r, i) + '</td>' +
         ['destino', 'data', 'tipo', 'nome', 'embarque', 'pagamento', 'total', 'sinal'].map(function (k) { return '<td style="' + td + '">' + esc(r[k]) + '</td>'; }).join('') +
-        celulaMenor(r, i) + '</tr>';
+        celulaPrazo(r, i) + celulaMenor(r, i) + '</tr>';
     }).join('');
     tb.insertAdjacentHTML('afterbegin', html);
   }
   render();
+  // contador do prazo e liberação da vaga quando vence (na planilha real: menu Pagamentos do sinal)
+  function conferePrazos() {
+    var mudou = false;
+    lista.forEach(function (r) {
+      if (r.tipo === 'Contratante' && r.prazo && (r.status || 'Aguardando sinal') === 'Aguardando sinal' && new Date(r.prazo) <= new Date()) {
+        lista.forEach(function (o) { if (o.codigo === r.codigo && (o.status || 'Aguardando sinal') === 'Aguardando sinal') o.status = 'Prazo vencido'; });
+        mudou = true;
+      }
+    });
+    if (mudou) { gravar(lista); render(); aviso('Prazo do sinal vencido: a reserva virou "Prazo vencido" e a vaga voltou para o site.'); }
+    Array.prototype.forEach.call(tb.querySelectorAll('[data-prazo]'), function (el) { el.textContent = contador(new Date(el.getAttribute('data-prazo')) - Date.now()); });
+  }
+  setInterval(conferePrazos, 1000);
 
   var codigos = {}; lista.forEach(function (r) { codigos[r.codigo] = 1; });
   var n = Object.keys(codigos).length, menores = lista.filter(function (r) { return r.aut; }).length;
@@ -156,7 +196,7 @@
   var editando = -1;
   var aviso = function (t) {
     var el = document.getElementById('aut-toast');
-    if (!el) { el = document.createElement('div'); el.id = 'aut-toast'; el.setAttribute('role', 'status'); el.style.cssText = 'font-family: inherit; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0F1B2D; color: #FFFFFF; font-weight: 700; padding: 12px 18px; border-radius: 999px; z-index: 50'; document.body.appendChild(el); }
+    if (!el) { el = document.createElement('div'); el.id = 'aut-toast'; el.setAttribute('role', 'status'); el.style.cssText = "font-family: 'Inter', system-ui, sans-serif; font-size: 15px; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0F1B2D; color: #FFFFFF; font-weight: 700; padding: 12px 18px; border-radius: 999px; z-index: 50"; document.body.appendChild(el); }
     el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(function () { el.hidden = true; }, 3500);
   };
   dlg.addEventListener('close', function () {
@@ -172,6 +212,8 @@
     aviso(A.ehMenor(a, r.aut.r) ? 'Autorização refeita com os dados novos.' : 'Na nova data, não é mais menor: autorização dispensada.');
   });
   tb.addEventListener('click', function (e) {
+    var vc = e.target.closest('[data-vencer]');
+    if (vc) { var rv = lista[+vc.getAttribute('data-vencer')]; rv.prazo = new Date(Date.now() - 1000).toISOString(); gravar(lista); conferePrazos(); return; }
     var v = e.target.closest('[data-ver]'), ed = e.target.closest('[data-editar]');
     if (v) { var r = lista[+v.getAttribute('data-ver')]; A.imprimir([[r.aut.r, r.aut.a]]); }
     if (ed) {
@@ -185,7 +227,24 @@
       dlg.showModal();
     }
   });
+  // gestor muda o status (ex.: cliente mandou o comprovante no WhatsApp)
+  function aplicaStatus(codigo, st, todos) {
+    lista.forEach(function (o) {
+      if (o.codigo !== codigo) return;
+      if (todos || o.tipo === 'Contratante' || st === 'Sinal pago' || st === 'Pago') { if (!((st === 'Sinal pago' || st === 'Pago') && o.status === 'Cancelada' && o.tipo !== 'Contratante')) o.status = st; }
+      if ((st === 'Sinal pago' || st === 'Pago') && o.tipo === 'Contratante' && !o.pagoEm) o.pagoEm = new Date().toISOString();
+    });
+    gravar(lista); render();
+  }
   tb.addEventListener('change', function (e) {
+    var sel = e.target.closest('[data-status]');
+    if (sel) {
+      var r = lista[+sel.getAttribute('data-status')], st = sel.value;
+      if (r.tipo === 'Contratante' || st === 'Sinal pago' || st === 'Pago') aplicaStatus(r.codigo, st, r.tipo === 'Contratante');
+      else { r.status = st; gravar(lista); render(); }
+      aviso(st === 'Sinal pago' || st === 'Pago' ? 'Reserva ' + r.codigo + ' confirmada para todos os passageiros. O contador do cliente para sozinho.' : 'Status atualizado: ' + st + '.');
+      return;
+    }
     var c = e.target.closest('[data-entregue]'); if (!c) return;
     lista[+c.getAttribute('data-entregue')].aut.entregue = c.checked; gravar(lista); render();
     aviso(c.checked ? 'Autorização marcada como entregue.' : 'Autorização marcada como pendente.');
