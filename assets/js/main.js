@@ -513,6 +513,24 @@
       ocupadas[v.id] = (ocupadas[v.id] || 0) + pax;
     }
 
+    // modo demonstração: guarda a reserva neste navegador para aparecer em /demo/planilha
+    if (DEMO) {
+      try {
+        var agora = new Date(), hora = ('0' + agora.getDate()).slice(-2) + '/' + ('0' + (agora.getMonth() + 1)).slice(-2) + ' ' +
+          ('0' + agora.getHours()).slice(-2) + ':' + ('0' + agora.getMinutes()).slice(-2);
+        var linhasDemo = [{ hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Contratante', nome: f.nome,
+          embarque: f.embarque, pagamento: pagamento === 'credito' ? 'Crédito ' + parcelas + 'x' : nomes[pagamento], total: brl(total()), sinal: brl(sinal) }];
+        acomps.forEach(function (a) {
+          var id = idade(a.nasc);
+          linhasDemo.push({ hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Acompanhante',
+            nome: a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : ''), embarque: a.dif ? a.emb.trim() : f.embarque, pagamento: '', total: '', sinal: '' });
+        });
+        var guardadas = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]');
+        localStorage.setItem('boraDemoReservas', JSON.stringify(linhasDemo.concat(guardadas).slice(0, 60)));
+      } catch (err) { /* navegador sem armazenamento: só não aparece na planilha de demonstração */ }
+    }
+    $('bk-demo-planilha').hidden = !DEMO;
+
     // tela de reserva concluída
     $('bk-code').textContent = codigo; $('bk-code2').textContent = codigo;
     $('bk-reopen').href = link;
