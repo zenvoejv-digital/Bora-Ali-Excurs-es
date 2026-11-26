@@ -335,7 +335,63 @@
     $('bk-parc-opts').innerHTML = html;
   }
 
-  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '' }; }
+  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '', vinc: '', rNome: '', rVinc: '', rCpf: '', rRg: '', rTel: '' }; }
+
+  // ---------- menor de idade: autorização do responsável ----------
+  var VINCULOS = { pai: 'Pai ou mãe do menor', resp: 'Responsável legal do menor (tutor ou guarda)', parente: 'Avô/avó, tio(a) ou irmão(ã) maior de idade', outro: 'Outra pessoa (amigo, vizinho, padrinho...)' };
+  function ehMenor(a, v) { var id = idadeNaViagem(a.nasc, v); return id != null && id >= 0 && id < 18; }
+  function precisaResp(a) { return a.vinc === 'parente' || a.vinc === 'outro'; }
+  function opcoesSel(mapa, sel) {
+    return '<option value="">Selecione</option>' + Object.keys(mapa).map(function (k) {
+      return '<option value="' + esc(k) + '"' + (k === sel ? ' selected' : '') + '>' + esc(mapa[k]) + '</option>';
+    }).join('');
+  }
+  var VINC_RESP = { 'Mãe': 'Mãe', 'Pai': 'Pai', 'Tutor(a) ou guardião(ã)': 'Tutor(a) ou guardião(ã)' };
+  function quemAssina(a, f) {
+    if (precisaResp(a)) return { nome: a.rNome.trim(), rg: a.rRg.trim(), cpf: a.rCpf, tel: a.rTel, papel: a.rVinc };
+    return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
+  }
+  function exigeFirma(a, v) { var id = idadeNaViagem(a.nasc, v); return id < 16 && a.vinc === 'outro'; }
+  function textoAutorizacao(a, f, v) {
+    var q = quemAssina(a, f);
+    return 'assinada por ' + q.nome + (q.papel ? ' (' + q.papel.toLowerCase() + ')' : '') + (exigeFirma(a, v) ? ', com firma reconhecida' : '') + ', entregue no embarque';
+  }
+  function autorizacaoHTML(r, a) {
+    var v = r.v, f = r.f, q = quemAssina(a, f), id = idadeNaViagem(a.nasc, v), mesmo = !precisaResp(a);
+    var box = function (on) { return '<span class="ap-box">' + (on ? 'X' : '&nbsp;') + '</span>'; };
+    var linha = function (t) { return t ? '<strong>' + esc(t) + '</strong>' : '<span class="ap-blank"></span>'; };
+    var nota = exigeFirma(a, v)
+      ? '<strong>Firma reconhecida obrigatória.</strong> O(a) menor tem menos de 16 anos e viaja com quem não é parente próximo: reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Assinatura eletrônica (gov.br) não é aceita.'
+      : (id < 16 && a.vinc === 'parente'
+        ? 'O(a) menor viaja com parente: leve também um documento que comprove o parentesco (certidão de nascimento ou RG com filiação).'
+        : 'Leve esta autorização assinada e um documento com foto do(a) menor no dia do embarque.');
+    return '<section class="ap-doc">' +
+      '<header class="ap-head"><div><strong class="ap-brand">Bora Ali Excursões</strong><span>Salto/SP · Reserva ' + esc(r.codigo) + '</span></div><span>' + esc(v.destino) + ' · ' + esc(v.data) + '</span></header>' +
+      '<h1>Autorização de viagem para menor de idade</h1>' +
+      '<p>Eu, ' + linha(q.nome) + ', RG nº ' + linha(q.rg) + ', CPF nº ' + linha(q.cpf) + ', telefone ' + linha(q.tel) + ', na qualidade de ' +
+        box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === 'Tutor(a) ou guardião(ã)') + ' tutor(a) ou guardião(ã),</p>' +
+      '<p><strong>AUTORIZO</strong> o(a) menor ' + linha(a.nome.trim()) + ', nascido(a) em ' + linha(fmtDate(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + linha(a.rg.trim()) + ', CPF nº ' + linha(a.cpf) +
+        ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + ' (' + esc(v.dia) + ')</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +
+      (mesmo
+        ? '<p>O(a) menor viajará acompanhado(a) por mim, responsável pela reserva, durante toda a excursão.</p>'
+        : '<p>O(a) menor viajará acompanhado(a) de ' + linha(f.nome) + ', RG nº ' + linha(f.rg) + ', CPF nº ' + linha(f.cpf) + ', telefone ' + linha(f.tel) + ', ' + (a.vinc === 'parente' ? 'parente maior de idade do(a) menor' : 'pessoa maior de idade de minha confiança') + ', que se responsabiliza por ele(a) durante toda a excursão.</p>') +
+      '<p>Saúde e necessidades informadas: ' + esc(f.saude || 'nenhuma') + '. Contato de emergência: ' + esc([f.emgNome, f.emgTel].filter(Boolean).join(' - ') || q.nome + ' - ' + q.tel) + '.</p>' +
+      '<p>Em caso de emergência, autorizo ' + (mesmo ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
+      '<p class="ap-local">' + esc(f.cidade || '______________') + ', ____ de ______________ de ________.</p>' +
+      '<div class="ap-sign"><div><span class="ap-line"></span>' + esc(q.nome) + '<br><small>Assinatura do(a) responsável legal</small></div><div class="ap-firma">Espaço para reconhecimento de firma</div></div>' +
+      '<p class="ap-note">' + nota + '</p>' +
+    '</section>';
+  }
+  var ultimaReserva = null;
+  function imprimirAutorizacoes(lista) {
+    if (!ultimaReserva || !lista.length) return;
+    $('aut-print').innerHTML = lista.map(function (a) { return autorizacaoHTML(ultimaReserva, a); }).join('');
+    document.body.classList.add('imprimindo');
+    var fim = function () { document.body.classList.remove('imprimindo'); window.removeEventListener('afterprint', fim); };
+    window.addEventListener('afterprint', fim);
+    window.print();
+    setTimeout(fim, 1500);
+  }
 
   function syncAcomps() {
     pax = acomps.length + 1;
@@ -352,6 +408,19 @@
         F + '<label class="f-label" for="' + id + 'rg">RG *</label><input id="' + id + 'rg" data-a="' + i + '" data-k="rg" class="f-input" type="text" placeholder="00.000.000-0" value="' + esc(a.rg) + '"></div></div>' +
         F + '<label class="f-label" for="' + id + 'nasc">Data de nascimento *</label><input id="' + id + 'nasc" data-a="' + i + '" data-k="nasc" class="f-input" type="date" value="' + esc(a.nasc) + '"></div>' +
         (viagemAtual && viagemAtual.soTransporte ? F + '<label class="f-label" for="' + id + 'tipo">Ingresso</label><select id="' + id + 'tipo" data-a="' + i + '" data-k="tipo" class="f-input">' + opcoesTipo(viagemAtual, a.tipo) + '</select></div>' : '') +
+        '<div id="' + id + 'menor" hidden style="border: 1.5px solid #F47B20; background: #FFF8F1; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px">' +
+          '<span style="font-weight: 700; font-size: 15px; color: #7A3608">Menor de idade: precisa de autorização do responsável</span>' +
+          '<span class="f-hint" style="margin: 0">Depois de enviar a reserva, o site gera a autorização preenchida para imprimir. O responsável assina e ela é entregue no embarque.</span>' +
+          F + '<label class="f-label" for="' + id + 'vinc">Quem fez a reserva (contratante) é *</label><select id="' + id + 'vinc" data-a="' + i + '" data-k="vinc" class="f-input">' + opcoesSel(VINCULOS, a.vinc) + '</select></div>' +
+          '<div id="' + id + 'resp"' + (precisaResp(a) ? '' : ' hidden') + ' style="display: flex; flex-direction: column; gap: 12px">' +
+            '<span style="font-weight: 700; font-size: 14px; color: #33445A">Pai, mãe ou responsável legal que vai assinar</span>' +
+            G + F + '<label class="f-label" for="' + id + 'rnome">Nome completo *</label><input id="' + id + 'rnome" data-a="' + i + '" data-k="rNome" class="f-input" type="text" value="' + esc(a.rNome) + '"></div>' +
+            F + '<label class="f-label" for="' + id + 'rvinc">É o(a) *</label><select id="' + id + 'rvinc" data-a="' + i + '" data-k="rVinc" class="f-input">' + opcoesSel(VINC_RESP, a.rVinc) + '</select></div></div>' +
+            G + F + '<label class="f-label" for="' + id + 'rcpf">CPF *</label><input id="' + id + 'rcpf" data-a="' + i + '" data-k="rCpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00" value="' + esc(a.rCpf) + '"></div>' +
+            F + '<label class="f-label" for="' + id + 'rrg">RG *</label><input id="' + id + 'rrg" data-a="' + i + '" data-k="rRg" class="f-input" type="text" value="' + esc(a.rRg) + '"></div>' +
+            F + '<label class="f-label" for="' + id + 'rtel">Telefone *</label><input id="' + id + 'rtel" data-a="' + i + '" data-k="rTel" class="f-input" type="tel" inputmode="tel" placeholder="(11) 90000-0000" value="' + esc(a.rTel) + '"></div></div>' +
+          '</div>' +
+        '</div>' +
         '<span id="' + id + 'preco" aria-live="polite" style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #EEF5FC; color: #0A4D8C"></span>' +
         '<label for="' + id + 'dif" style="display: flex; gap: 10px; align-items: center; font-size: 15px; color: #33445A; cursor: pointer; min-height: 44px">' +
         '<input id="' + id + 'dif" data-a="' + i + '" data-k="dif" type="checkbox"' + (a.dif ? ' checked' : '') + ' style="width: 22px; height: 22px; margin: 0; flex: none; accent-color: #0A4D8C"><span>Vai embarcar em outro local</span></label>' +
@@ -362,6 +431,7 @@
 
   function precoChips() {
     acomps.forEach(function (a, i) {
+      var mn = $('bk-a' + (i + 1) + '-menor'); if (mn) mn.hidden = !ehMenor(a, viagemAtual);
       var el = $('bk-a' + (i + 1) + '-preco'); if (!el) return;
       var p = precoAcomp(viagemAtual, a);
       el.textContent = p.pendente ? 'Valor: ' + brl(p.valor) + ' (informe a data de nascimento)' : (p.valor === 0 ? 'Não paga · ' + p.rotulo : brl(p.valor) + ' · ' + p.rotulo);
@@ -453,13 +523,15 @@
   $('bk-acomps').addEventListener('input', function (e) {
     var el = e.target, i = el.getAttribute('data-a'), k = el.getAttribute('data-k');
     if (i == null || k === 'dif') return;
-    if (k === 'cpf') el.value = maskCpf(el.value);
+    if (k === 'cpf' || k === 'rCpf') el.value = maskCpf(el.value);
+    if (k === 'rTel') el.value = maskTel(el.value);
     acomps[+i][k] = el.value;
+    if (k === 'vinc') $('bk-a' + (+i + 1) + '-resp').hidden = !precisaResp(acomps[+i]);
     if (k === 'nasc' || k === 'tipo') updateSummary();
   });
   $('bk-acomps').addEventListener('focusout', function (e) {
     var el = e.target;
-    if (el.getAttribute && el.getAttribute('data-k') === 'cpf') checaCpf(el, null);
+    if (el.getAttribute && /^r?[cC]pf$/.test(el.getAttribute('data-k') || '')) checaCpf(el, null);
   });
   $('bk-acomps').addEventListener('change', function (e) {
     var el = e.target, i = el.getAttribute('data-a');
@@ -534,6 +606,16 @@
       if (!a.nasc) faltam.push('nascimento');
       else if (idadeNaViagem(a.nasc, viagemAtual) < 0) faltam.push('data de nascimento válida');
       if (a.dif && !a.emb.trim()) faltam.push('local de embarque');
+      if (ehMenor(a, viagemAtual)) {
+        if (!a.vinc) faltam.push('quem é o contratante para o menor');
+        else if (precisaResp(a)) {
+          if (a.rNome.trim().split(/\s+/).length < 2) faltam.push('nome do responsável');
+          if (!a.rVinc) faltam.push('se o responsável é mãe, pai ou tutor');
+          if (!cpfValido(a.rCpf)) faltam.push('CPF do responsável');
+          if (!a.rRg.trim()) faltam.push('RG do responsável');
+          if (digits(a.rTel).length < 10) faltam.push('telefone do responsável');
+        }
+      }
       if (faltam.length) miss.push('acompanhante ' + (i + 1) + ' (' + faltam.join(', ') + ')');
     });
     if (!pagamento) miss.push('forma de pagamento');
@@ -576,6 +658,11 @@
         'Nome: ' + a.nome.trim(), 'RG: ' + a.rg.trim(), 'CPF: ' + a.cpf, 'Nascimento: ' + comIdade(a.nasc),
         'Valor: ' + (pp.valor === 0 ? 'não paga - ' + pp.rotulo : brl(pp.valor) + ' - ' + pp.rotulo),
         'Embarque: ' + (a.dif ? a.emb.trim() : 'mesmo do contratante (' + f.embarque + ')'));
+      if (ehMenor(a, v)) {
+        lines.push('Menor de idade: contratante é ' + VINCULOS[a.vinc].toLowerCase());
+        if (precisaResp(a)) lines.push('Responsável legal: ' + a.rNome.trim() + ' (' + a.rVinc + ') - CPF ' + a.rCpf + ' - RG ' + a.rRg.trim() + ' - Tel. ' + a.rTel);
+        lines.push('Autorização: ' + textoAutorizacao(a, f, v));
+      }
     });
     if (f.saude) lines.push('', '*Necessidades / saúde:* ' + f.saude);
     lines.push('', '*PAGAMENTO*',
@@ -603,6 +690,7 @@
         acompanhantes: acomps.map(function (a) {
           return { nome: a.nome.trim(), rg: a.rg.trim(), cpf: a.cpf, nascimento: fmtDate(a.nasc), idade: idade(a.nasc),
             valor: precoAcomp(v, a).valor,
+            autorizacao: ehMenor(a, v) ? 'Menor: autorização ' + textoAutorizacao(a, f, v) + (precisaResp(a) ? ' (resp. ' + a.rNome.trim() + ', ' + a.rVinc + ', CPF ' + a.rCpf + ', tel. ' + a.rTel + ')' : '') : '',
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },
@@ -636,6 +724,12 @@
 
     // tela de reserva concluída
     $('bk-code').textContent = codigo; $('bk-code2').textContent = codigo;
+    ultimaReserva = { codigo: codigo, v: v, f: f, acomps: acomps.map(function (a) { return Object.assign({}, a); }) };
+    var menores = ultimaReserva.acomps.filter(function (a) { return ehMenor(a, v); });
+    $('bk-aut').hidden = !menores.length;
+    $('bk-aut-list').innerHTML = menores.map(function (a, n) {
+      return '<button type="button" data-aut="' + n + '" class="btn" style="font-family: inherit; cursor: pointer; border: none; background: #F47B20; color: #06284D; font-weight: 800; font-size: 15px; padding: 12px 18px; border-radius: 999px; min-height: 48px">Imprimir autorização de ' + esc(a.nome.trim().split(/\s+/)[0]) + (exigeFirma(a, v) ? ' (firma reconhecida)' : '') + '</button>';
+    }).join('') + (menores.length > 1 ? '<button type="button" data-aut="todas" class="btn" style="font-family: inherit; cursor: pointer; border: 2px solid #F47B20; background: #FFFFFF; color: #7A3608; font-weight: 800; font-size: 15px; padding: 10px 18px; border-radius: 999px; min-height: 48px">Imprimir todas</button>' : '');
     $('bk-reopen').href = link;
     var temPix = !!String(PIX.chave || '').trim();
     $('bk-pix-block').hidden = !temPix; $('bk-pix-none').hidden = temPix;
@@ -648,6 +742,12 @@
     $('bk-done-title').focus();
   });
 
+  $('bk-aut-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-aut]'); if (!b || !ultimaReserva) return;
+    var menores = ultimaReserva.acomps.filter(function (a) { return ehMenor(a, ultimaReserva.v); });
+    var k = b.getAttribute('data-aut');
+    imprimirAutorizacoes(k === 'todas' ? menores : [menores[+k]]);
+  });
   $('bk-copy').addEventListener('click', function () {
     var ta = $('bk-pix-code'), btn = this;
     function ok() { btn.textContent = 'Código copiado!'; }

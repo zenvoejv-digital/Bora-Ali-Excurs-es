@@ -289,6 +289,7 @@ R. Mal. Deodoro da Fonseca, 1117 - Vila Nova</a>
 <span style="font-weight: 700; font-size: 15px; color: #7A3608">Condições da reserva</span>
 <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.5; color: #44403C">
 <li>A reserva é realizada mediante sinal de <strong>50% do valor</strong> (<span id="bk-sinal-terms"></span>).</li>
+<li>Menores de 18 anos só embarcam com autorização assinada pelo responsável. O site gera a autorização para imprimir depois da reserva.</li>
 <li>Em caso de cancelamento, <strong>não haverá estorno</strong>.</li>
 <li>O pagamento deve ser <strong>concluído antes do passeio</strong>.</li>
 </ul>
@@ -331,6 +332,12 @@ Agendar pelo WhatsApp
 <a id="bk-reopen" class="btn" href="#" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 10px; background: #0A4D8C; color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; padding: 14px 20px; border-radius: 999px; min-height: 52px">Abrir o WhatsApp de novo</a>
 <a id="bk-demo-planilha" hidden href="/demo/planilha" target="_blank" rel="noopener" class="btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #FFE2C4; color: #7A3608; font-weight: 800; font-size: 15px; text-decoration: none; padding: 12px 20px; border-radius: 999px; min-height: 48px">DEMONSTRAÇÃO · Ver esta reserva na planilha</a>
 
+<div id="bk-aut" hidden style="background: #FFF8F1; border: 1.5px solid #F47B20; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<span style="font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 17px; color: #7A3608">Autorização para menor de idade</span>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #33445A">Imprima a autorização, peça para o responsável assinar e entregue no embarque. <strong>Sem ela, o menor não embarca.</strong></p>
+<div id="bk-aut-list" style="display: flex; flex-wrap: wrap; gap: 10px"></div>
+</div>
+
 <div id="bk-pix-block" hidden style="background: #EEF5FC; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
 <span style="font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 17px; color: #0A4D8C">Pague o sinal de <span id="bk-done-sinal"></span> por Pix</span>
 <label class="f-label" for="bk-pix-code" style="margin: 0">Pix copia e cola</label>
@@ -362,5 +369,6 @@ Agendar pelo WhatsApp
 <script src="/assets/js/data.js"></script>
 <script src="/assets/js/art.js"></script>
 <script src="/assets/js/main.js"></script>
+<div id="aut-print" aria-hidden="true"></div>
 </body>
 </html>

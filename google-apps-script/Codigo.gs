@@ -21,7 +21,7 @@ var ABA_CLIENTES = 'Clientes';
 var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 'Data', 'Tipo', 'Nome', 'RG', 'CPF',
   'Nascimento', 'Idade', 'Telefone', 'E-mail', 'Endereço', 'Embarque', 'Emergência (nome)', 'Emergência (tel.)',
   'Necessidades / saúde', 'Pagamento', 'Parcelas', 'Total da reserva', 'Sinal (50%)', 'Observações', 'WhatsApp que recebeu',
-  'Aceita novidades', 'Valor do passageiro'];
+  'Aceita novidades', 'Valor do passageiro', 'Autorização do menor'];
 var CAB_AGENDA = ['id', 'data', 'dia', 'destino', 'categoria', 'valor', 'obs', 'selo', 'mes', 'cena', 'vagas', 'ativo'];
 
 // ---------- menu ----------
@@ -87,7 +87,7 @@ function criarAbaBusca_() {
   var col = 'Reservas!';
   var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
   b.getRange('A5').setFormula(
-    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AA,' +
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AB,' +
     '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
     '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
     '"Nada encontrado. Confira o código ou tente parte do nome."))');
@@ -141,7 +141,7 @@ function buscarReserva() {
   html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
   var ss = SpreadsheetApp.getActive();
   ss.setActiveSheet(r);
-  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AA' + a.linha; })).activate();
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AB' + a.linha; })).activate();
   ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
     achadas.length + ' linha(s) encontrada(s)');
 }
@@ -166,10 +166,10 @@ function doPost(e) {
     var base = [agora, d.codigo, STATUS[0], v.id, v.destino, v.data];
     var linhas = [];
     linhas.push(base.concat(['Contratante', c.nome, c.rg, c.cpf, c.nascimento, c.idade, c.telefone, c.email, c.endereco,
-      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor]));
+      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, '']));
     (d.acompanhantes || []).slice(0, 20).forEach(function (a) {
       linhas.push(base.concat(['Acompanhante de ' + c.nome, a.nome, a.rg, a.cpf, a.nascimento, a.idade, c.telefone, '', '',
-        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor]));
+        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || '']));
     });
     linhas = linhas.map(function (l) { return l.map(limpa_); });
     sh.getRange(sh.getLastRow() + 1, 1, linhas.length, CAB_RESERVAS.length).setValues(linhas);

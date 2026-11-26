@@ -55,3 +55,10 @@ Use **Implantar › Gerenciar implantações › editar (lápis) › Versão: No
 ## Privacidade (LGPD)
 
 A planilha guarda nome, RG, CPF, endereço e data de nascimento. Compartilhe só com quem atende as reservas e não deixe o link da planilha público. (O link do *App da Web* pode ser público: ele não mostra dados pessoais.)
+
+## Menores de idade (autorização)
+
+- Quando um acompanhante tem menos de 18 anos na data do passeio, o site pede quem é o contratante para ele (pai/mãe, responsável legal, parente ou outra pessoa). Se não for pai, mãe ou responsável, pede os dados de quem vai assinar.
+- Depois da reserva, o site gera a **autorização preenchida para imprimir**. O responsável assina e entrega no embarque.
+- Menor de 16 anos viajando com quem não é parente próximo: a autorização precisa de **firma reconhecida em cartório** (Resolução CNJ nº 295/2019). Assinatura pelo gov.br não vale. O site avisa isso no documento.
+- A coluna **Autorização do menor** (AB) da aba Reservas mostra quem assina e se precisa de firma reconhecida. Confira no embarque.
