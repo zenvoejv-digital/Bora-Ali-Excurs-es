@@ -530,6 +530,7 @@
       } catch (err) { /* navegador sem armazenamento: só não aparece na planilha de demonstração */ }
     }
     $('bk-demo-planilha').hidden = !DEMO;
+    $('bk-demo-planilha').href = '/demo/planilha?busca=' + encodeURIComponent(codigo);
 
     // tela de reserva concluída
     $('bk-code').textContent = codigo; $('bk-code2').textContent = codigo;

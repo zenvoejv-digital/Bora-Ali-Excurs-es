@@ -12,6 +12,7 @@ var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Cancelada'];
 
 var ABA_RESERVAS = 'Reservas';
 var ABA_AGENDA = 'Agenda';
+var ABA_BUSCA = 'Buscar';
 var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 'Data', 'Tipo', 'Nome', 'RG', 'CPF',
   'Nascimento', 'Idade', 'Telefone', 'E-mail', 'Endereço', 'Embarque', 'Emergência (nome)', 'Emergência (tel.)',
   'Necessidades / saúde', 'Pagamento', 'Parcelas', 'Total da reserva', 'Sinal (50%)', 'Observações', 'WhatsApp que recebeu'];
@@ -21,6 +22,9 @@ var CAB_AGENDA = ['id', 'data', 'dia', 'destino', 'categoria', 'valor', 'obs', '
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Bora Ali')
     .addItem('Preparar planilha (1ª vez)', 'configurarPlanilha')
+    .addSeparator()
+    .addItem('Buscar reserva (código, nome ou CPF)', 'buscarReserva')
+    .addItem('Ir para a aba de busca', 'abrirAbaBusca')
     .addSeparator()
     .addItem('Gerar lista de embarque', 'gerarListaEmbarque')
     .addItem('Mensagens pós-viagem (avaliação)', 'mensagensPosViagem')
@@ -52,8 +56,87 @@ function configurarPlanilha() {
     a.getRange(1, 1).setNote('Cada linha é uma viagem do site. "vagas": total de lugares (vazio = sem controle). ' +
       '"ativo": escreva "não" para esconder do site. "categoria": fds, praia, parques, natureza ou passeios.');
   }
-  SpreadsheetApp.getUi().alert('Pronto! Abas "Reservas" e "Agenda" criadas. Agora publique como App da Web (veja o LEIA-ME).');
+  criarAbaBusca_();
+  SpreadsheetApp.getUi().alert('Pronto! Abas "Buscar", "Reservas" e "Agenda" criadas. Agora publique como App da Web (veja o LEIA-ME).');
 }
+
+// ---------- busca ----------
+// Aba "Buscar": digite o código (ex.: BA-K3F9Q2), parte do nome, CPF ou telefone na célula B2
+// e todas as linhas daquela reserva aparecem embaixo, atualizando sozinhas.
+function criarAbaBusca_() {
+  var ss = SpreadsheetApp.getActive();
+  var b = ss.getSheetByName(ABA_BUSCA);
+  if (b) return b;
+  b = ss.insertSheet(ABA_BUSCA, 0);
+  b.getRange('A1').setValue('Buscar reserva').setFontSize(16).setFontWeight('bold').setFontColor('#0A4D8C');
+  b.getRange('A2').setValue('Código, nome, CPF ou telefone:').setFontWeight('bold');
+  b.getRange('B2').setBackground('#FFF1E6').setBorder(true, true, true, true, false, false, '#F47B20', SpreadsheetApp.BorderStyle.SOLID_MEDIUM)
+    .setNote('Digite aqui. Ex.: BA-K3F9Q2, Maria, 529.982.247-25 ou 52998224725');
+  b.getRange('C2').setValue('← digite e aperte Enter').setFontColor('#55657A');
+  b.getRange(4, 1, 1, CAB_RESERVAS.length).setValues([CAB_RESERVAS]).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
+  var col = 'Reservas!';
+  var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
+  b.getRange('A5').setFormula(
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:Y,' +
+    '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
+    '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
+    '"Nada encontrado. Confira o código ou tente parte do nome."))');
+  b.getRange('A5:A').setNumberFormat('dd/mm/yyyy hh:mm');
+  b.setFrozenRows(4);
+  b.setColumnWidths(1, CAB_RESERVAS.length, 140);
+  b.setColumnWidth(1, 220);
+  return b;
+}
+
+function abrirAbaBusca() {
+  var b = criarAbaBusca_();
+  SpreadsheetApp.getActive().setActiveSheet(b);
+  b.getRange('B2').activate();
+}
+
+// Menu: pergunta o código (ou nome/CPF), mostra o resumo da reserva e seleciona as linhas na aba Reservas
+function buscarReserva() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.prompt('Buscar reserva', 'Digite o código (ex.: BA-K3F9Q2), parte do nome, CPF ou telefone:', ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  var termo = String(resp.getResponseText()).trim();
+  if (!termo) return;
+  var r = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
+  if (!r || r.getLastRow() < 2) { ui.alert('Ainda não há reservas.'); return; }
+  var dados = r.getRange(2, 1, r.getLastRow() - 1, CAB_RESERVAS.length).getDisplayValues();
+  var t = termo.toLowerCase(), d = termo.replace(/\D/g, '');
+  var achadas = [];
+  dados.forEach(function (l, i) {
+    var texto = (l[1] + ' ' + l[7] + ' ' + l[9] + ' ' + l[12]).toLowerCase();
+    var nums = (l[9] + ' ' + l[12]).replace(/\D/g, '');
+    if (texto.indexOf(t) >= 0 || (d.length >= 4 && nums.indexOf(d) >= 0)) achadas.push({ linha: i + 2, l: l });
+  });
+  if (!achadas.length) { ui.alert('Nada encontrado para "' + termo + '".'); return; }
+  // agrupa por código
+  var porCodigo = {};
+  achadas.forEach(function (a) { (porCodigo[a.l[1]] = porCodigo[a.l[1]] || []).push(a); });
+  var html = '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.5">';
+  Object.keys(porCodigo).forEach(function (cod) {
+    var g = porCodigo[cod], c = g[0].l;
+    html += '<div style="border:1px solid #D6E4F2;border-radius:8px;padding:10px 12px;margin-bottom:10px">' +
+      '<div style="font-size:15px;font-weight:bold;color:#0A4D8C">' + esc_(cod) + ' · ' + esc_(c[2]) + '</div>' +
+      '<div><b>' + esc_(c[4]) + '</b> — ' + esc_(c[5]) + '</div>';
+    g.forEach(function (a) {
+      var l = a.l;
+      html += '<div>• ' + esc_(l[6]) + ': <b>' + esc_(l[7]) + '</b> · CPF ' + esc_(l[9]) + ' · embarque ' + esc_(l[15]) + ' <span style="color:#888">(linha ' + a.linha + ')</span></div>';
+      if (l[19]) html += '<div style="margin-top:4px">Pagamento: ' + esc_(l[19]) + (l[20] && l[20] !== '1' ? ' em ' + esc_(l[20]) + 'x' : '') + ' · Total ' + esc_(l[21]) + ' · Sinal ' + esc_(l[22]) + ' · Tel. ' + esc_(l[12]) + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
+  var ss = SpreadsheetApp.getActive();
+  ss.setActiveSheet(r);
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':Y' + a.linha; })).activate();
+  ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
+    achadas.length + ' linha(s) encontrada(s)');
+}
+
+function esc_(v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
 // ---------- recebe reservas do site ----------
 function doPost(e) {
