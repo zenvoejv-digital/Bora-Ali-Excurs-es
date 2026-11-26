@@ -48,7 +48,7 @@
 
   var PAGAMENTOS = [
     { id: 'pix', label: 'Pix', sub: 'À vista' },
-    { id: 'credito', label: 'Cartão de crédito', sub: 'Até ' + MAX_PARCELAS + 'x' },
+    { id: 'credito', label: 'Cartão de crédito', sub: 'Até ' + MAX_PARCELAS + 'x (com taxa)' },
     { id: 'debito', label: 'Cartão de débito', sub: 'À vista' }
   ];
 
@@ -237,9 +237,24 @@
   var acomps = [];   // dados de cada acompanhante
 
   // cidades de embarque
-  $('bk-emb').innerHTML = '<option value="">Selecione</option>' + (CONFIG.cidadesEmbarque || []).map(function (c) {
-    return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
-  }).join('');
+  function opcoesEmbarque(sel) {
+    return '<option value="">Selecione</option>' + (CONFIG.cidadesEmbarque || []).map(function (c) {
+      return '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>';
+    }).join('');
+  }
+  $('bk-emb').innerHTML = opcoesEmbarque('');
+  // "só transporte" (ex.: Hopi Hari para aniversariante, PcD e idoso)
+  function opcoesTipo(v, sel) {
+    var st = v && v.soTransporte; if (!st) return '';
+    return '<option value="">Transporte + ingresso (' + brl(v.valor) + ')</option>' + st.motivos.map(function (m) {
+      return '<option value="' + esc(m) + '"' + (m === sel ? ' selected' : '') + '>Só transporte (' + brl(st.valor) + ') · ' + esc(m) + '</option>';
+    }).join('');
+  }
+  function aplicaTipo(v, p, tipo) {
+    var st = v && v.soTransporte;
+    if (!st || !tipo || p.pendente || p.valor === 0) return p;
+    return { valor: st.valor, rotulo: 'só transporte · ' + tipo };
+  }
 
   // ---------- crianças: preço pela idade no dia do passeio ----------
   var ISENTA_ATE = (CONFIG.criancaIsentaAte == null) ? 4 : +CONFIG.criancaIsentaAte;
@@ -287,17 +302,20 @@
   }
   function precosDaReserva() {
     var v = viagemAtual; if (!v) return [];
-    var lista = [{ valor: v.valor, rotulo: 'contratante' }];
-    acomps.forEach(function (a) { lista.push(precoPassageiro(v, idadeNaViagem(a.nasc, v))); });
+    var lista = [aplicaTipo(v, { valor: v.valor, rotulo: 'contratante' }, $('bk-tipo').value)];
+    acomps.forEach(function (a) { lista.push(precoAcomp(v, a)); });
     return lista;
   }
+  function precoAcomp(v, a) { return aplicaTipo(v, precoPassageiro(v, idadeNaViagem(a.nasc, v)), a.tipo); }
   function total() { return precosDaReserva().reduce(function (s, p) { return s + p.valor; }, 0); }
   function resumoPassageiros() {
     var ps = precosDaReserva(), pag = 0, isentos = 0, infantis = 0;
-    ps.forEach(function (p) { if (p.valor === 0) isentos++; else if (p.infantil) infantis++; else pag++; });
-    var t = [pag + (pag === 1 ? ' pagante' : ' pagantes')];
+    var soT = 0;
+    ps.forEach(function (p) { if (p.valor === 0) isentos++; else if (/^só transporte/.test(p.rotulo)) soT++; else if (p.infantil) infantis++; else pag++; });
+    var t = pag ? [pag + (pag === 1 ? ' pagante' : ' pagantes')] : [];
     if (infantis) t.push(infantis + (infantis === 1 ? ' infantil' : ' infantis'));
     if (isentos) t.push(isentos + (isentos === 1 ? ' isento' : ' isentos'));
+    if (soT) t.push(soT + ' só transporte');
     return t.join(' · ');
   }
 
@@ -317,7 +335,7 @@
     $('bk-parc-opts').innerHTML = html;
   }
 
-  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '' }; }
+  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '' }; }
 
   function syncAcomps() {
     pax = acomps.length + 1;
@@ -333,10 +351,11 @@
         G + F + '<label class="f-label" for="' + id + 'cpf">CPF *</label><input id="' + id + 'cpf" data-a="' + i + '" data-k="cpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00" value="' + esc(a.cpf) + '"></div>' +
         F + '<label class="f-label" for="' + id + 'rg">RG *</label><input id="' + id + 'rg" data-a="' + i + '" data-k="rg" class="f-input" type="text" placeholder="00.000.000-0" value="' + esc(a.rg) + '"></div></div>' +
         F + '<label class="f-label" for="' + id + 'nasc">Data de nascimento *</label><input id="' + id + 'nasc" data-a="' + i + '" data-k="nasc" class="f-input" type="date" value="' + esc(a.nasc) + '"></div>' +
+        (viagemAtual && viagemAtual.soTransporte ? F + '<label class="f-label" for="' + id + 'tipo">Ingresso</label><select id="' + id + 'tipo" data-a="' + i + '" data-k="tipo" class="f-input">' + opcoesTipo(viagemAtual, a.tipo) + '</select></div>' : '') +
         '<span id="' + id + 'preco" aria-live="polite" style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #EEF5FC; color: #0A4D8C"></span>' +
         '<label for="' + id + 'dif" style="display: flex; gap: 10px; align-items: center; font-size: 15px; color: #33445A; cursor: pointer; min-height: 44px">' +
         '<input id="' + id + 'dif" data-a="' + i + '" data-k="dif" type="checkbox"' + (a.dif ? ' checked' : '') + ' style="width: 22px; height: 22px; margin: 0; flex: none; accent-color: #0A4D8C"><span>Vai embarcar em outro local</span></label>' +
-        '<div id="' + id + 'emb-wrap"' + (a.dif ? '' : ' hidden') + '>' + F + '<label class="f-label" for="' + id + 'emb">Onde será o embarque? *</label><input id="' + id + 'emb" data-a="' + i + '" data-k="emb" class="f-input" type="text" placeholder="Ex.: Indaiatuba" value="' + esc(a.emb) + '"></div></div>' +
+        '<div id="' + id + 'emb-wrap"' + (a.dif ? '' : ' hidden') + '>' + F + '<label class="f-label" for="' + id + 'emb">Ponto de embarque *</label><select id="' + id + 'emb" data-a="' + i + '" data-k="emb" class="f-input">' + opcoesEmbarque(a.emb) + '</select></div></div>' +
         '</div>';
     }).join('');
   }
@@ -344,7 +363,7 @@
   function precoChips() {
     acomps.forEach(function (a, i) {
       var el = $('bk-a' + (i + 1) + '-preco'); if (!el) return;
-      var p = precoPassageiro(viagemAtual, idadeNaViagem(a.nasc, viagemAtual));
+      var p = precoAcomp(viagemAtual, a);
       el.textContent = p.pendente ? 'Valor: ' + brl(p.valor) + ' (informe a data de nascimento)' : (p.valor === 0 ? 'Não paga · ' + p.rotulo : brl(p.valor) + ' · ' + p.rotulo);
       el.style.background = p.valor === 0 ? '#E6F4EA' : p.infantil ? '#FFF1E6' : '#EEF5FC';
       el.style.color = p.valor === 0 ? '#1E5B37' : p.infantil ? '#7A3608' : '#0A4D8C';
@@ -380,7 +399,9 @@
     $('bk-trip-name').textContent = v.destino;
     $('bk-trip-meta').textContent = v.data + ' · ' + v.dia + ' · ' + v.obs;
     $('bk-trip-price').textContent = brl(v.valor);
-    $('bk-kids').textContent = regraCriancas(v);
+    $('bk-kids').textContent = regraCriancas(v) + (v.soTransporte ? ' ' + v.soTransporte.aviso : '');
+    $('bk-tipo-wrap').hidden = !v.soTransporte;
+    $('bk-tipo').innerHTML = opcoesTipo(v, '');
     updateSummary();
     lastFocus = document.activeElement;
     booking.hidden = false;
@@ -434,7 +455,7 @@
     if (i == null || k === 'dif') return;
     if (k === 'cpf') el.value = maskCpf(el.value);
     acomps[+i][k] = el.value;
-    if (k === 'nasc') updateSummary();
+    if (k === 'nasc' || k === 'tipo') updateSummary();
   });
   $('bk-acomps').addEventListener('focusout', function (e) {
     var el = e.target;
@@ -446,6 +467,7 @@
     acomps[+i].dif = el.checked;
     $('bk-a' + (+i + 1) + '-emb-wrap').hidden = !el.checked;
   });
+  $('bk-tipo').addEventListener('change', function () { clearMessages(); updateSummary(); });
   $('bk-cpf').addEventListener('input', function (e) { e.target.value = maskCpf(e.target.value); });
   $('bk-tel').addEventListener('input', function (e) { e.target.value = maskTel(e.target.value); });
   $('bk-emg-tel').addEventListener('input', function (e) { e.target.value = maskTel(e.target.value); });
@@ -526,7 +548,7 @@
     var v = viagemAtual, codigo = gerarCodigo(), sinal = total() / 2;
     var nomes = { pix: 'Pix', credito: 'Cartão de crédito', debito: 'Cartão de débito' };
     var pagTxt = pagamento === 'credito'
-      ? 'Cartão de crédito em ' + parcelas + 'x (aprox. ' + brl(total() / parcelas) + ' cada)'
+      ? 'Cartão de crédito em ' + parcelas + 'x (aprox. ' + brl(total() / parcelas) + ' cada, mais a taxa do cartão)'
       : nomes[pagamento];
     var lines = [
       '*NOVA RESERVA - BORA ALI EXCURSÕES*',
@@ -544,11 +566,12 @@
       'Endereço: ' + enderecoTexto(f),
       'Telefone: ' + f.tel
     ];
+    if ($('bk-tipo').value && v.soTransporte) lines.push('Valor: ' + brl(precosDaReserva()[0].valor) + ' - ' + precosDaReserva()[0].rotulo);
     if (f.email) lines.push('E-mail: ' + f.email);
     lines.push('Embarque: ' + f.embarque);
     if (f.emgNome || f.emgTel) lines.push('Contato de emergência: ' + [f.emgNome, f.emgTel].filter(Boolean).join(' - '));
     acomps.forEach(function (a, i) {
-      var pp = precoPassageiro(v, idadeNaViagem(a.nasc, v));
+      var pp = precoAcomp(v, a);
       lines.push('', '*ACOMPANHANTE ' + (i + 1) + '*',
         'Nome: ' + a.nome.trim(), 'RG: ' + a.rg.trim(), 'CPF: ' + a.cpf, 'Nascimento: ' + comIdade(a.nasc),
         'Valor: ' + (pp.valor === 0 ? 'não paga - ' + pp.rotulo : brl(pp.valor) + ' - ' + pp.rotulo),
@@ -575,11 +598,11 @@
         contratante: {
           nome: f.nome, rg: f.rg, cpf: f.cpf, nascimento: fmtDate(f.nasc), idade: idade(f.nasc), telefone: f.tel, email: f.email,
           endereco: enderecoTexto(f), cep: f.cep, cidade: f.cidade, embarque: f.embarque,
-          emergenciaNome: f.emgNome, emergenciaTelefone: f.emgTel, valor: v.valor
+          emergenciaNome: f.emgNome, emergenciaTelefone: f.emgTel, valor: precosDaReserva()[0].valor
         },
         acompanhantes: acomps.map(function (a) {
           return { nome: a.nome.trim(), rg: a.rg.trim(), cpf: a.cpf, nascimento: fmtDate(a.nasc), idade: idade(a.nasc),
-            valor: precoPassageiro(v, idadeNaViagem(a.nasc, v)).valor,
+            valor: precoAcomp(v, a).valor,
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },

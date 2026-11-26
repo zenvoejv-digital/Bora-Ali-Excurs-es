@@ -25,8 +25,9 @@
 window.BORA_CONFIG = {
   // números que recebem as reservas (com DDI 55); cada reserva vai para um deles, intercalando
   whatsappReservas: ["5511974882023", "5511995383275"],
-  maxParcelas: 10,                     // parcelas máximas no cartão de crédito
-  cidadesEmbarque: ["Sorocaba", "Itu", "Salto", "Indaiatuba", "Campinas"],
+  maxParcelas: 12,                     // parcelas máximas no cartão de crédito (com taxa da maquininha)
+  // pontos de embarque (dos posts do Instagram): "Cidade · ponto"
+  cidadesEmbarque: ["Sorocaba · Terminal SP", "Itu · Cidade Nova", "Itu · Tenda", "Salto · Rodoviária", "Indaiatuba · Rodoviária Nova", "Campinas · Largo do Pará"],
 
   // Pix para o sinal de 50%. Deixe chave "" para não mostrar o Pix no site.
   pix: {
@@ -72,7 +73,7 @@ window.BORA_VIAGENS = [
   {"id": "maresias-fev-21", "data": "21/02", "dia": "Domingo", "destino": "Maresias", "categoria": "praia", "valor": 250.0, "obs": "Bate e volta", "selo": "", "mes": "fev", "cena": "maresias", "vagas": null},
   {"id": "thermas-da-mata-jan-03", "data": "03/01", "dia": "Domingo", "destino": "Thermas da Mata", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "", "mes": "jan", "cena": "thermasmata", "vagas": null},
   {"id": "castelo-park-jan-09", "data": "09/01", "dia": "Sábado", "destino": "Castelo Park", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "", "mes": "jan", "cena": "castelo", "vagas": null},
-  {"id": "hopi-hari-jan-16", "data": "16/01", "dia": "Sábado", "destino": "Hopi Hari", "categoria": "parques", "valor": 199.99, "obs": "Transporte com ingresso", "selo": "Férias", "mes": "jan", "cena": "hopihari", "vagas": null, "criancas": {"aviso": "Criança acima de 1 metro paga o ingresso do parque (valor confirmado no WhatsApp)."}},
+  {"id": "hopi-hari-jan-16", "data": "16/01", "dia": "Sábado", "destino": "Hopi Hari", "categoria": "parques", "valor": 199.99, "obs": "Transporte com ingresso", "selo": "Férias", "mes": "jan", "cena": "hopihari", "vagas": null, "criancas": {"aviso": "Criança acima de 1 metro paga o ingresso do parque (valor confirmado no WhatsApp)."}, "soTransporte": {"valor": 140, "motivos": ["Aniversariante do mês", "Pessoa com deficiência (PcD)", "Idoso"], "aviso": "Só transporte por R$ 140,00 para aniversariante do mês, pessoa com deficiência ou idoso, que entram no parque com o benefício do Hopi Hari (leve documento que comprove)."}},
   {"id": "wet-n-wild-jan-17", "data": "17/01", "dia": "Domingo", "destino": "Wet'n Wild", "categoria": "parques", "valor": 240.0, "obs": "Transporte com ingresso", "selo": "", "mes": "jan", "cena": "wetnwild", "vagas": null, "criancas": {"faixas": [{"de": 0, "ate": 1, "valor": 0}, {"de": 2, "ate": 4, "valor": 99.99}, {"de": 5, "ate": 6, "valor": 199.99}], "aviso": "Valores do Instagram: 2 a 4 anos no colo R$ 99,99 (ingresso); 5 e 6 anos R$ 199,99; a partir de 7 anos R$ 240,00."}},
   {"id": "maeda-fev-02", "data": "02/02", "dia": "Terça", "destino": "Maeda", "categoria": "parques", "valor": 260.0, "obs": "Bate e volta", "selo": "Feriado de Itu", "mes": "fev", "cena": "maeda", "vagas": null},
   {"id": "thermas-de-sao-pedro-fev-07", "data": "07/02", "dia": "Domingo", "destino": "Thermas de São Pedro", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "Carnaval", "mes": "fev", "cena": "thermassp", "vagas": null},
