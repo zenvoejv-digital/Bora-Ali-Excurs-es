@@ -65,7 +65,7 @@ A planilha guarda nome, RG, CPF, endereço e data de nascimento. Compartilhe só
 **Na planilha (tudo automático):**
 - Ao chegar uma reserva com menor, a linha fica **laranja** e a planilha gera a **autorização em PDF** na pasta *Bora Ali - Autorizações de menores* do seu Google Drive. O link fica na coluna **AI**. O arquivo é privado: para mandar ao cliente, baixe e envie no WhatsApp.
 - A coluna **AB** resume quem assina e se precisa de firma reconhecida. Se faltar algum dado, ela diz o que falta (e o PDF só é gerado quando estiver completo).
-- As colunas **AC a AH** guardam quem é o contratante para o menor e os dados do responsável. Pode corrigir à vontade.
+- As colunas **AC a AH** e **AK–AL** guardam quem é o contratante para o menor e os dados do responsável (nome, mãe/pai/tutor, CPF, RG, telefone, nascimento e e-mail). Pode corrigir à vontade.
 - A coluna **AJ** é a caixinha **Autorização entregue**: marque no embarque.
 - A idade é calculada **na data do passeio** (ano em `ANO_VIAGENS`, no topo do código). Se mudar a data ou o nascimento e a pessoa fizer 18 anos antes da viagem, o destaque e a autorização somem sozinhos.
 

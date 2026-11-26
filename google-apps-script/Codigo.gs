@@ -27,7 +27,7 @@ var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 
   'Necessidades / saúde', 'Pagamento', 'Parcelas', 'Total da reserva', 'Sinal (50%)', 'Observações', 'WhatsApp que recebeu',
   'Aceita novidades', 'Valor do passageiro', 'Autorização do menor',
   'Contratante é (menor)', 'Responsável (nome)', 'Responsável é', 'Responsável (CPF)', 'Responsável (RG)', 'Responsável (telefone)',
-  'Link da autorização', 'Autorização entregue'];
+  'Link da autorização', 'Autorização entregue', 'Responsável (nascimento)', 'Responsável (e-mail)'];
 // colunas (1 = A) usadas pelas autorizações
 var COL_AUT = 28, COL_VINC = 29, COL_LINK = 35, COL_ENTREGUE = 36;
 var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Parente', outro: 'Outra pessoa',
@@ -103,7 +103,7 @@ function criarAbaBusca_() {
   var col = 'Reservas!';
   var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
   b.getRange('A5').setFormula(
-    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AJ,' +
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AL,' +
     '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
     '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
     '"Nada encontrado. Confira o código ou tente parte do nome."))');
@@ -157,7 +157,7 @@ function buscarReserva() {
   html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
   var ss = SpreadsheetApp.getActive();
   ss.setActiveSheet(r);
-  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AJ' + a.linha; })).activate();
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AL' + a.linha; })).activate();
   ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
     achadas.length + ' linha(s) encontrada(s)');
 }
@@ -566,9 +566,9 @@ var AGENDA_INICIAL = [
 
 // valores das colunas AC a AJ para um acompanhante vindo do site
 function colunasMenor_(m) {
-  if (!m) return ['', '', '', '', '', '', '', ''];
+  if (!m) return ['', '', '', '', '', '', '', '', '', ''];
   var r = m.responsavel || {};
-  return [VINC_ROTULO[m.vinculo] || '', r.nome || '', r.papel || '', r.cpf || '', r.rg || '', r.telefone || '', '', false];
+  return [VINC_ROTULO[m.vinculo] || '', r.nome || '', r.papel || '', r.cpf || '', r.rg || '', r.telefone || '', '', false, r.nascimento || '', r.email || ''];
 }
 
 function validacoesMenores_(sh) {
@@ -626,11 +626,11 @@ function prepararMenores_(sh, codigos, forcar) {
     if (ent !== 'TRUE' && ent !== 'FALSE') sh.getRange(linha, COL_ENTREGUE).insertCheckboxes();
     var c = contratantes[l[1]] || [];
     var a = { contratante: ehContratante, nome: l[7], nasc: isoDe_(l[10]), rg: l[8], cpf: l[9], dif: c.length && l[15] !== c[15], emb: l[15],
-      vinc: chaveVinculo_(l[COL_VINC - 1]), rNome: l[29], rVinc: l[30], rCpf: l[31], rRg: l[32], rTel: l[33] };
+      vinc: chaveVinculo_(l[COL_VINC - 1]), rNome: l[29], rVinc: l[30], rCpf: l[31], rRg: l[32], rTel: l[33], rNasc: isoDe_(l[36]), rEmail: l[37] };
     var adultos = txt.filter(function (o) { if (o[1] !== l[1]) return false; var io = idadeNaViagem_(o[10], o[5]); return io != null && io >= 18; })
       .map(function (o) { return o[7]; });
     var r = { codigo: l[1], ano: ANO_VIAGENS, v: { destino: l[4], data: l[5], dia: dias[l[3]] || '' },
-      f: { nome: c[7] || '', rg: c[8] || '', cpf: c[9] || '', tel: c[12] || '', embarque: c[15] || l[15], cidade: cidadeDe_(c[14]), saude: c[18] || '', emgNome: c[16] || '', emgTel: c[17] || '' },
+      f: { nome: c[7] || '', rg: c[8] || '', cpf: c[9] || '', tel: c[12] || '', nasc: isoDe_(c[10]), email: c[13] || '', embarque: c[15] || l[15], cidade: cidadeDe_(c[14]), saude: c[18] || '', emgNome: c[16] || '', emgTel: c[17] || '' },
       adultos: adultos };
     var falta = [];
     if (!c.length) falta.push('linha do contratante');
@@ -642,6 +642,8 @@ function prepararMenores_(sh, codigos, forcar) {
       if (!a.rCpf) falta.push('CPF do responsável (AF)');
       if (!a.rRg) falta.push('RG do responsável (AG)');
       if (!a.rTel) falta.push('telefone do responsável (AH)');
+      if (!a.rNasc) falta.push('nascimento do responsável (AK)');
+      if (!a.rEmail) falta.push('e-mail do responsável (AL)');
     }
     var resumo = 'Menor (' + id + (id === 1 ? ' ano' : ' anos') + ' na viagem): ' +
       (falta.length ? 'autorização PENDENTE, falta ' + falta.join(', ') : 'autorização ' + AUT_.texto(a, r.f, id));
@@ -707,7 +709,7 @@ function aoEditarReservas(e) {
   var r0 = Math.max(2, e.range.getRow()), r1 = e.range.getLastRow(), c0 = e.range.getColumn(), c1 = e.range.getLastColumn();
   if (r1 < 2) return;
   if (c0 >= COL_AUT && c1 <= COL_AUT) return;            // resumo escrito pelo próprio script
-  if (c0 >= COL_LINK && c1 <= COL_ENTREGUE) return;     // link e "entregue" não mudam o documento
+  if (c0 >= COL_LINK && c1 <= COL_ENTREGUE) return;     // link e "entregue" não mudam o documento (AK e AL mudam)
   if (c0 === 3 && c1 === 3) return;                     // só o status mudou
   var cods = sh.getRange(r0, 2, r1 - r0 + 1, 1).getDisplayValues().map(function (r) { return r[0]; }).filter(String);
   prepararMenores_(sh, unicos_(cods), true);
@@ -748,8 +750,8 @@ var AUT_ = (function () {
   function precisaResp(a) { return !!a.contratante || a.vinc === 'parente' || a.vinc === 'outro'; }
   function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && (a.contratante ? a.vinc === 'sozinho' : a.vinc === 'outro'); }
   function quemAssina(a, f) {
-    if (precisaResp(a)) return { nome: (a.rNome || '').trim(), rg: (a.rRg || '').trim(), cpf: a.rCpf || '', tel: a.rTel || '', papel: a.rVinc || '' };
-    return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
+    if (precisaResp(a)) return { nome: (a.rNome || '').trim(), rg: (a.rRg || '').trim(), cpf: a.rCpf || '', tel: a.rTel || '', papel: a.rVinc || '', nasc: a.rNasc || '', email: (a.rEmail || '').trim() };
+    return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '', nasc: f.nasc || '', email: f.email || '' };
   }
   function texto(a, f, idadeNaViagem) {
     var q = quemAssina(a, f);
@@ -772,7 +774,7 @@ var AUT_ = (function () {
     return '<section class="ap-doc">' +
       '<table class="ap-head"><tr><td><strong class="ap-brand">Bora Ali Excursões</strong><br>Salto/SP · Reserva ' + esc(r.codigo) + '</td><td class="ap-right">' + esc(v.destino) + ' · ' + esc(v.data) + '</td></tr></table>' +
       '<h1>Autorização de viagem para menor de idade</h1>' +
-      '<p>Eu, ' + ln(q.nome) + ', RG nº ' + ln(q.rg) + ', CPF nº ' + ln(q.cpf) + ', telefone ' + ln(q.tel) + ', na qualidade de ' +
+      '<p>Eu, ' + ln(q.nome) + ', nascido(a) em ' + ln(dataBr(q.nasc)) + ', RG nº ' + ln(q.rg) + ', CPF nº ' + ln(q.cpf) + ', telefone ' + ln(q.tel) + ', e-mail ' + ln(q.email) + ', na qualidade de ' +
         box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === PAPEIS[2]) + ' tutor(a) ou guardião(ã),</p>' +
       '<p><strong>AUTORIZO</strong> o(a) menor ' + ln((a.nome || '').trim()) + ', nascido(a) em ' + ln(dataBr(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + ln((a.rg || '').trim()) + ', CPF nº ' + ln(a.cpf) +
         ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + (v.dia ? ' (' + esc(v.dia) + ')' : '') + '</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +

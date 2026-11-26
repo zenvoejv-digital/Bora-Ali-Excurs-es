@@ -335,7 +335,7 @@
     $('bk-parc-opts').innerHTML = html;
   }
 
-  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '', vinc: '', rNome: '', rVinc: '', rCpf: '', rRg: '', rTel: '' }; }
+  function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '', vinc: '', rNome: '', rVinc: '', rCpf: '', rRg: '', rTel: '', rNasc: '', rEmail: '' }; }
 
   // ---------- menor de idade: autorização do responsável (assets/js/autorizacao.js) ----------
   var AUT = window.BoraAut;
@@ -352,7 +352,7 @@
   function textoAutorizacao(a, f, v) { return AUT.texto(a, f, idadeNaViagem(a.nasc, v)); }
   function reservaAut(codigo, v, f) {
     return { codigo: codigo, ano: CONFIG.anoAgenda, v: { destino: v.destino, data: v.data, dia: v.dia },
-      f: { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, embarque: f.embarque, cidade: f.cidade, saude: f.saude, emgNome: f.emgNome, emgTel: f.emgTel } };
+      f: { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, nasc: f.nasc, email: f.email, embarque: f.embarque, cidade: f.cidade, saude: f.saude, emgNome: f.emgNome, emgTel: f.emgTel } };
   }
   var ultimaReserva = null, ultimosAcomps = [];
 
@@ -360,10 +360,23 @@
   $('bk-cr-com').innerHTML = '<option value="">Selecione</option>' + Object.keys(AUT.VIAJA_COM).map(function (k) {
     return '<option value="' + k + '">' + esc(AUT.VIAJA_COM[k]) + '</option>';
   }).join('');
+  // nascimento (maior de 18) e e-mail do responsável
+  function faltaNascEmail(a, suf) {
+    var out = [];
+    suf = suf || '';
+    if (!a.rNasc) out.push('data de nascimento' + suf);
+    else { var ir = idade(a.rNasc); if (ir == null || ir < 18) out.push('data de nascimento' + suf + ' (precisa ter 18 anos ou mais)'); }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.rEmail || '')) out.push('e-mail' + suf);
+    return out;
+  }
+  function textoResp(a) {
+    return a.rNome + ' (' + a.rVinc + ') - nasc. ' + AUT.dataBr(a.rNasc) + ' - CPF ' + a.rCpf + ' - RG ' + a.rRg + ' - Tel. ' + a.rTel + ' - ' + a.rEmail;
+  }
   function contratanteMenor() { var id = idadeNaViagem($('bk-nasc').value, viagemAtual); return id != null && id >= 0 && id < 18; }
   function dadosContratanteMenor(f) {
     return { contratante: true, nome: f.nome, nasc: f.nasc, rg: f.rg, cpf: f.cpf, dif: false, emb: f.embarque, vinc: $('bk-cr-com').value,
-      rNome: $('bk-cr-nome').value.trim(), rVinc: $('bk-cr-papel').value, rCpf: $('bk-cr-cpf').value, rRg: $('bk-cr-rg').value.trim(), rTel: $('bk-cr-tel').value };
+      rNome: $('bk-cr-nome').value.trim(), rVinc: $('bk-cr-papel').value, rCpf: $('bk-cr-cpf').value, rRg: $('bk-cr-rg').value.trim(), rTel: $('bk-cr-tel').value,
+      rNasc: $('bk-cr-nasc').value, rEmail: $('bk-cr-email').value.trim() };
   }
   function adultosDaReserva(v) {
     return acomps.filter(function (a) { var id = idadeNaViagem(a.nasc, v); return id != null && id >= 18; }).map(function (a) { return a.nome.trim(); });
@@ -384,6 +397,7 @@
   $('bk-cr-cpf').addEventListener('input', function (e) { e.target.value = maskCpf(e.target.value); });
   $('bk-cr-tel').addEventListener('input', function (e) { e.target.value = maskTel(e.target.value); });
   $('bk-cr-cpf').addEventListener('blur', function () { checaCpf($('bk-cr-cpf'), null); });
+  $('bk-cr-nasc').max = new Date().toISOString().slice(0, 10);
   function imprimirAutorizacoes(lista) {
     if (!ultimaReserva) return;
     AUT.imprimir(lista.map(function (a) { return [ultimaReserva, a]; }));
@@ -416,6 +430,8 @@
             G + F + '<label class="f-label" for="' + id + 'rcpf">CPF *</label><input id="' + id + 'rcpf" data-a="' + i + '" data-k="rCpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00" value="' + esc(a.rCpf) + '"></div>' +
             F + '<label class="f-label" for="' + id + 'rrg">RG *</label><input id="' + id + 'rrg" data-a="' + i + '" data-k="rRg" class="f-input" type="text" value="' + esc(a.rRg) + '"></div>' +
             F + '<label class="f-label" for="' + id + 'rtel">Telefone *</label><input id="' + id + 'rtel" data-a="' + i + '" data-k="rTel" class="f-input" type="tel" inputmode="tel" placeholder="(11) 90000-0000" value="' + esc(a.rTel) + '"></div></div>' +
+            G + F + '<label class="f-label" for="' + id + 'rnasc">Data de nascimento *</label><input id="' + id + 'rnasc" data-a="' + i + '" data-k="rNasc" class="f-input" type="date" value="' + esc(a.rNasc) + '"></div>' +
+            F + '<label class="f-label" for="' + id + 'remail">E-mail *</label><input id="' + id + 'remail" data-a="' + i + '" data-k="rEmail" class="f-input" type="email" inputmode="email" placeholder="nome@email.com" value="' + esc(a.rEmail) + '"></div></div>' +
           '</div>' +
         '</div>' +
         '<span id="' + id + 'preco" aria-live="polite" style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #EEF5FC; color: #0A4D8C"></span>' +
@@ -598,6 +614,7 @@
       if (!cpfValido(cm.rCpf)) faltaR.push('CPF');
       if (!cm.rRg) faltaR.push('RG');
       if (digits(cm.rTel).length < 10) faltaR.push('telefone');
+      faltaR = faltaR.concat(faltaNascEmail(cm));
       if (!cm.vinc) faltaR.push('com quem o menor vai viajar');
       if (faltaR.length) miss.push('responsável pelo contratante menor (' + faltaR.join(', ') + ')');
       else if (cm.vinc === 'junto' && !acomps.some(function (a) { return digits(a.cpf) === digits(cm.rCpf); })) miss.push('adicionar o responsável como acompanhante (com o mesmo CPF)');
@@ -623,6 +640,7 @@
           if (!cpfValido(a.rCpf)) faltam.push('CPF do responsável');
           if (!a.rRg.trim()) faltam.push('RG do responsável');
           if (digits(a.rTel).length < 10) faltam.push('telefone do responsável');
+          faltam = faltam.concat(faltaNascEmail(a, ' do responsável'));
         }
       }
       if (faltam.length) miss.push('acompanhante ' + (i + 1) + ' (' + faltam.join(', ') + ')');
@@ -660,7 +678,7 @@
     var cMenor = contratanteMenor() ? dadosContratanteMenor(f) : null;
     if (cMenor) {
       lines.push('*Contratante menor de idade (' + idadeNaViagem(f.nasc, v) + ' anos na viagem)*',
-        'Responsável legal: ' + cMenor.rNome + ' (' + cMenor.rVinc + ') - CPF ' + cMenor.rCpf + ' - RG ' + cMenor.rRg + ' - Tel. ' + cMenor.rTel,
+        'Responsável legal: ' + textoResp(cMenor),
         'Viaja com: ' + AUT.VIAJA_COM[cMenor.vinc].toLowerCase(),
         'Autorização: ' + textoAutorizacao(cMenor, f, v));
     }
@@ -676,7 +694,7 @@
         'Embarque: ' + (a.dif ? a.emb.trim() : 'mesmo do contratante (' + f.embarque + ')'));
       if (ehMenor(a, v)) {
         lines.push('Menor de idade: contratante é ' + VINCULOS[a.vinc].toLowerCase());
-        if (precisaResp(a)) lines.push('Responsável legal: ' + a.rNome.trim() + ' (' + a.rVinc + ') - CPF ' + a.rCpf + ' - RG ' + a.rRg.trim() + ' - Tel. ' + a.rTel);
+        if (precisaResp(a)) lines.push('Responsável legal: ' + textoResp({ rNome: a.rNome.trim(), rVinc: a.rVinc, rNasc: a.rNasc, rCpf: a.rCpf, rRg: a.rRg.trim(), rTel: a.rTel, rEmail: a.rEmail.trim() }));
         lines.push('Autorização: ' + textoAutorizacao(a, f, v));
       }
     });
@@ -703,13 +721,13 @@
           endereco: enderecoTexto(f), cep: f.cep, cidade: f.cidade, embarque: f.embarque,
           emergenciaNome: f.emgNome, emergenciaTelefone: f.emgTel, valor: precosDaReserva()[0].valor,
           autorizacao: cMenor ? 'Menor: autorização ' + textoAutorizacao(cMenor, f, v) : '',
-          menor: cMenor ? { vinculo: cMenor.vinc, responsavel: { nome: cMenor.rNome, papel: cMenor.rVinc, cpf: cMenor.rCpf, rg: cMenor.rRg, telefone: cMenor.rTel } } : null
+          menor: cMenor ? { vinculo: cMenor.vinc, responsavel: { nome: cMenor.rNome, papel: cMenor.rVinc, cpf: cMenor.rCpf, rg: cMenor.rRg, telefone: cMenor.rTel, nascimento: AUT.dataBr(cMenor.rNasc), email: cMenor.rEmail } } : null
         },
         acompanhantes: acomps.map(function (a) {
           return { nome: a.nome.trim(), rg: a.rg.trim(), cpf: a.cpf, nascimento: fmtDate(a.nasc), idade: idade(a.nasc),
             valor: precoAcomp(v, a).valor,
             autorizacao: ehMenor(a, v) ? 'Menor: autorização ' + textoAutorizacao(a, f, v) : '',
-            menor: ehMenor(a, v) ? { vinculo: a.vinc, responsavel: precisaResp(a) ? { nome: a.rNome.trim(), papel: a.rVinc, cpf: a.rCpf, rg: a.rRg.trim(), telefone: a.rTel } : null } : null,
+            menor: ehMenor(a, v) ? { vinculo: a.vinc, responsavel: precisaResp(a) ? { nome: a.rNome.trim(), papel: a.rVinc, cpf: a.rCpf, rg: a.rRg.trim(), telefone: a.rTel, nascimento: AUT.dataBr(a.rNasc), email: a.rEmail.trim() } : null } : null,
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },
