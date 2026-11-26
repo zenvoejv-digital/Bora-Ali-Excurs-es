@@ -28,6 +28,7 @@
 <h2 style="font-family: 'Poppins', sans-serif; margin: 0; font-size: 22px; font-weight: 700; color: #0A4D8C">Aba "Reservas"</h2>
 <button type="button" id="limpar-teste" hidden style="font-family: inherit; cursor: pointer; border: 2px solid #0A4D8C; background: #FFFFFF; color: #0A4D8C; font-weight: 700; font-size: 14px; padding: 8px 16px; border-radius: 999px; min-height: 44px">Apagar reservas de teste</button>
 </div>
+<p id="sem-teste" style="margin: 0; background: #EEF5FC; border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 1.5; color: #33445A">Para ver uma reserva sua chegando aqui: abra o <a href="/?demo=1" style="color: #0A4D8C; font-weight: 700">site em modo demonstração</a>, agende qualquer viagem e volte para esta página <strong>no mesmo navegador</strong>. Ela aparece no topo, marcada como NOVA.</p>
 <p id="aviso-teste" role="status" hidden style="margin: 0; background: #E6F4EA; border: 1.5px solid #2E8B57; color: #1E5B37; border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600"></p>
 <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #55657A">Chega sozinha a cada reserva. O status é escolhido numa lista: Aguardando sinal, Sinal pago, Pago ou Cancelada. Cancelada devolve a vaga para o site. As colunas de RG, CPF, nascimento, endereço e emergência também ficam na planilha e foram omitidas aqui.</p>
 <div style="overflow-x: auto; border-radius: 12px; border: 1px solid #E4EDF6"><table id="tabela-reservas" style="border-collapse: collapse; width: 100%; min-width: 1100px"><thead><tr><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Recebido em</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Código</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Status</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Destino</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Data</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Tipo</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Nome</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Embarque</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Pagamento</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Total</th><th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Sinal (50%)</th></tr></thead><tbody id="linhas-reservas">
@@ -62,6 +63,7 @@
   var lista = [];
   try { lista = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]'); } catch (e) {}
   if (!lista.length) return;
+  document.getElementById('sem-teste').hidden = true;
   var status = '<span style="background: #FFF1E6; color: #7A3608; font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px">Aguardando sinal</span>';
   var novo = '<span style="background: #F47B20; color: #06284D; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 999px; margin-left: 6px">NOVA</span>';
   var html = lista.map(function (r) {
@@ -85,6 +87,8 @@
   bt.hidden = false;
   bt.addEventListener('click', function () { try { localStorage.removeItem('boraDemoReservas'); } catch (e) {} location.reload(); });
 })();
+// se uma reserva de teste for feita em outra aba, recarrega para mostrar
+window.addEventListener('storage', function (e) { if (e.key === 'boraDemoReservas') location.reload(); });
 </script>
 </body>
 </html>
