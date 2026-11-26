@@ -16,6 +16,10 @@
    - mes:       chave do mês, igual a uma das chaves em BORA_MESES
    - cena:      animação do card (chaves em assets/js/art.js, SCENES); "" = genérica
    - vagas:     total de lugares no ônibus (ex.: 46); null = não controlar vagas
+   - criancas:  (opcional) regra de criança só desta viagem:
+                { isentaAte: 5 }  -> até 5 anos não paga (em vez da regra geral)
+                { faixas: [ { de: 2, ate: 4, valor: 99.99 }, { de: 5, ate: 6, valor: 199.99 } ] }
+                { aviso: "texto extra mostrado na reserva" }
    ========================================================= */
 
 window.BORA_CONFIG = {
@@ -40,7 +44,14 @@ window.BORA_CONFIG = {
   linkAvaliacao: "",
 
   // Mostrar "Restam X vagas" quando sobrarem até este número de lugares
-  avisoVagas: 10
+  avisoVagas: 10,
+
+  // CRIANÇAS (regra geral; cada viagem pode ter a sua no campo "criancas")
+  anoAgenda: 2027,          // ano das viagens da agenda, para calcular a idade no dia do passeio
+  criancaIsentaAte: 4,      // até esta idade, viaja no colo e não paga
+  // Desconto geral para uma faixa de idade (ex.: { de: 5, ate: 8, percentual: 20 }).
+  // Deixe null: no Instagram não há desconto geral; só algumas viagens têm valor infantil próprio.
+  descontoCriancas: null
 };
 
 window.BORA_MESES = [
@@ -61,13 +72,13 @@ window.BORA_VIAGENS = [
   {"id": "maresias-fev-21", "data": "21/02", "dia": "Domingo", "destino": "Maresias", "categoria": "praia", "valor": 250.0, "obs": "Bate e volta", "selo": "", "mes": "fev", "cena": "maresias", "vagas": null},
   {"id": "thermas-da-mata-jan-03", "data": "03/01", "dia": "Domingo", "destino": "Thermas da Mata", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "", "mes": "jan", "cena": "thermasmata", "vagas": null},
   {"id": "castelo-park-jan-09", "data": "09/01", "dia": "Sábado", "destino": "Castelo Park", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "", "mes": "jan", "cena": "castelo", "vagas": null},
-  {"id": "hopi-hari-jan-16", "data": "16/01", "dia": "Sábado", "destino": "Hopi Hari", "categoria": "parques", "valor": 199.99, "obs": "Transporte com ingresso", "selo": "Férias", "mes": "jan", "cena": "hopihari", "vagas": null},
-  {"id": "wet-n-wild-jan-17", "data": "17/01", "dia": "Domingo", "destino": "Wet'n Wild", "categoria": "parques", "valor": 240.0, "obs": "Transporte com ingresso", "selo": "", "mes": "jan", "cena": "wetnwild", "vagas": null},
+  {"id": "hopi-hari-jan-16", "data": "16/01", "dia": "Sábado", "destino": "Hopi Hari", "categoria": "parques", "valor": 199.99, "obs": "Transporte com ingresso", "selo": "Férias", "mes": "jan", "cena": "hopihari", "vagas": null, "criancas": {"aviso": "Criança acima de 1 metro paga o ingresso do parque (valor confirmado no WhatsApp)."}},
+  {"id": "wet-n-wild-jan-17", "data": "17/01", "dia": "Domingo", "destino": "Wet'n Wild", "categoria": "parques", "valor": 240.0, "obs": "Transporte com ingresso", "selo": "", "mes": "jan", "cena": "wetnwild", "vagas": null, "criancas": {"faixas": [{"de": 0, "ate": 1, "valor": 0}, {"de": 2, "ate": 4, "valor": 99.99}, {"de": 5, "ate": 6, "valor": 199.99}], "aviso": "Valores do Instagram: 2 a 4 anos no colo R$ 99,99 (ingresso); 5 e 6 anos R$ 199,99; a partir de 7 anos R$ 240,00."}},
   {"id": "maeda-fev-02", "data": "02/02", "dia": "Terça", "destino": "Maeda", "categoria": "parques", "valor": 260.0, "obs": "Bate e volta", "selo": "Feriado de Itu", "mes": "fev", "cena": "maeda", "vagas": null},
   {"id": "thermas-de-sao-pedro-fev-07", "data": "07/02", "dia": "Domingo", "destino": "Thermas de São Pedro", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "Carnaval", "mes": "fev", "cena": "thermassp", "vagas": null},
   {"id": "cidade-das-criancas-fev-14", "data": "14/02", "dia": "Domingo", "destino": "Cidade das Crianças", "categoria": "parques", "valor": 230.0, "obs": "Bate e volta", "selo": "", "mes": "fev", "cena": "criancas", "vagas": null},
   {"id": "greencamp-jan-23", "data": "23/01", "dia": "Sábado", "destino": "Greencamp", "categoria": "natureza", "valor": 280.0, "obs": "Bate e volta", "selo": "", "mes": "jan", "cena": "greencamp", "vagas": null},
-  {"id": "holambra-jan-24", "data": "24/01", "dia": "Domingo", "destino": "Holambra", "categoria": "natureza", "valor": 199.99, "obs": "Cidade das Flores", "selo": "", "mes": "jan", "cena": "holambra", "vagas": null},
+  {"id": "holambra-jan-24", "data": "24/01", "dia": "Domingo", "destino": "Holambra", "categoria": "natureza", "valor": 199.99, "obs": "Cidade das Flores", "selo": "", "mes": "jan", "cena": "holambra", "vagas": null, "criancas": {"isentaAte": 5}},
   {"id": "extrema-mg-fev-09", "data": "09/02", "dia": "Terça", "destino": "Extrema / MG", "categoria": "natureza", "valor": 199.99, "obs": "Bate e volta", "selo": "Carnaval", "mes": "fev", "cena": "extrema", "vagas": null},
   {"id": "pico-do-lopo-fev-14", "data": "14/02", "dia": "Domingo", "destino": "Pico do Lopo", "categoria": "natureza", "valor": 280.0, "obs": "Bate e volta", "selo": "", "mes": "fev", "cena": "picolopo", "vagas": null},
   {"id": "campos-do-jordao-fev-21", "data": "21/02", "dia": "Domingo", "destino": "Campos do Jordão", "categoria": "natureza", "valor": 220.0, "obs": "Bate e volta", "selo": "", "mes": "fev", "cena": "campos", "vagas": null},

@@ -104,7 +104,8 @@
     return a;
   }
   function comIdade(iso) {
-    var a = idade(iso);
+    // idade no dia do passeio (é ela que define o valor da criança)
+    var a = viagemAtual ? idadeNaViagem(iso, viagemAtual) : idade(iso);
     return fmtDate(iso) + (a == null ? '' : ' (' + a + (a === 1 ? ' ano' : ' anos') + (a < 12 ? ', criança' : '') + ')');
   }
   function maskCep(v) { var d = digits(v).slice(0, 8); return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d; }
@@ -240,7 +241,65 @@
     return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
   }).join('');
 
-  function total() { return (viagemAtual ? viagemAtual.valor : 0) * pax; }
+  // ---------- crianças: preço pela idade no dia do passeio ----------
+  var ISENTA_ATE = (CONFIG.criancaIsentaAte == null) ? 4 : +CONFIG.criancaIsentaAte;
+  function dataDaViagem(v) {
+    var m = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(v ? v.data : '');
+    return m ? new Date(+(CONFIG.anoAgenda || new Date().getFullYear()), +m[2] - 1, +m[1]) : new Date();
+  }
+  function idadeNaViagem(iso, v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return null;
+    var d = dataDaViagem(v), a = d.getFullYear() - +m[1];
+    if (d.getMonth() + 1 < +m[2] || (d.getMonth() + 1 === +m[2] && d.getDate() < +m[3])) a--;
+    return a;
+  }
+  // devolve { valor, rotulo } de um passageiro
+  function precoPassageiro(v, idade) {
+    var cri = v.criancas || {}, i;
+    if (idade == null || idade < 0) return { valor: v.valor, rotulo: 'preencha a data de nascimento', pendente: true };
+    if (cri.faixas) {
+      for (i = 0; i < cri.faixas.length; i++) {
+        var f = cri.faixas[i];
+        if (idade >= f.de && idade <= f.ate) return { valor: f.valor, rotulo: f.valor ? 'tarifa infantil (' + idade + (idade === 1 ? ' ano' : ' anos') + ')' : 'isento (' + idade + (idade === 1 ? ' ano' : ' anos') + ', no colo)', infantil: true };
+      }
+    }
+    var isentaAte = cri.isentaAte != null ? cri.isentaAte : ISENTA_ATE;
+    if (!cri.faixas && idade <= isentaAte) return { valor: 0, rotulo: 'isento (' + idade + (idade === 1 ? ' ano' : ' anos') + ', no colo)', infantil: true };
+    var dc = CONFIG.descontoCriancas;
+    if (dc && dc.percentual > 0 && idade >= dc.de && idade <= dc.ate) {
+      return { valor: Math.round(v.valor * (100 - dc.percentual)) / 100, rotulo: 'criança com ' + dc.percentual + '% de desconto (' + idade + ' anos)', infantil: true };
+    }
+    return { valor: v.valor, rotulo: idade < 12 ? 'criança, valor integral (' + idade + ' anos)' : 'valor integral' };
+  }
+  function regraCriancas(v) {
+    var cri = v.criancas || {};
+    var partes = [];
+    if (cri.faixas) partes.push(cri.aviso || '');
+    else {
+      var ate = cri.isentaAte != null ? cri.isentaAte : ISENTA_ATE;
+      partes.push('Crianças de até ' + ate + ' anos viajam no colo e não pagam.');
+      var dc = CONFIG.descontoCriancas;
+      if (dc && dc.percentual > 0) partes.push('De ' + dc.de + ' a ' + dc.ate + ' anos: ' + dc.percentual + '% de desconto.');
+      if (cri.aviso) partes.push(cri.aviso);
+    }
+    return partes.filter(Boolean).join(' ') + ' A idade conta no dia do passeio.';
+  }
+  function precosDaReserva() {
+    var v = viagemAtual; if (!v) return [];
+    var lista = [{ valor: v.valor, rotulo: 'contratante' }];
+    acomps.forEach(function (a) { lista.push(precoPassageiro(v, idadeNaViagem(a.nasc, v))); });
+    return lista;
+  }
+  function total() { return precosDaReserva().reduce(function (s, p) { return s + p.valor; }, 0); }
+  function resumoPassageiros() {
+    var ps = precosDaReserva(), pag = 0, isentos = 0, infantis = 0;
+    ps.forEach(function (p) { if (p.valor === 0) isentos++; else if (p.infantil) infantis++; else pag++; });
+    var t = [pag + (pag === 1 ? ' pagante' : ' pagantes')];
+    if (infantis) t.push(infantis + (infantis === 1 ? ' infantil' : ' infantis'));
+    if (isentos) t.push(isentos + (isentos === 1 ? ' isento' : ' isentos'));
+    return t.join(' · ');
+  }
 
   function renderPays() {
     $('bk-pays').innerHTML = PAGAMENTOS.map(function (p) {
@@ -274,6 +333,7 @@
         G + F + '<label class="f-label" for="' + id + 'cpf">CPF *</label><input id="' + id + 'cpf" data-a="' + i + '" data-k="cpf" class="f-input" type="text" inputmode="numeric" placeholder="000.000.000-00" value="' + esc(a.cpf) + '"></div>' +
         F + '<label class="f-label" for="' + id + 'rg">RG *</label><input id="' + id + 'rg" data-a="' + i + '" data-k="rg" class="f-input" type="text" placeholder="00.000.000-0" value="' + esc(a.rg) + '"></div></div>' +
         F + '<label class="f-label" for="' + id + 'nasc">Data de nascimento *</label><input id="' + id + 'nasc" data-a="' + i + '" data-k="nasc" class="f-input" type="date" value="' + esc(a.nasc) + '"></div>' +
+        '<span id="' + id + 'preco" aria-live="polite" style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #EEF5FC; color: #0A4D8C"></span>' +
         '<label for="' + id + 'dif" style="display: flex; gap: 10px; align-items: center; font-size: 15px; color: #33445A; cursor: pointer; min-height: 44px">' +
         '<input id="' + id + 'dif" data-a="' + i + '" data-k="dif" type="checkbox"' + (a.dif ? ' checked' : '') + ' style="width: 22px; height: 22px; margin: 0; flex: none; accent-color: #0A4D8C"><span>Vai embarcar em outro local</span></label>' +
         '<div id="' + id + 'emb-wrap"' + (a.dif ? '' : ' hidden') + '>' + F + '<label class="f-label" for="' + id + 'emb">Onde será o embarque? *</label><input id="' + id + 'emb" data-a="' + i + '" data-k="emb" class="f-input" type="text" placeholder="Ex.: Indaiatuba" value="' + esc(a.emb) + '"></div></div>' +
@@ -281,9 +341,20 @@
     }).join('');
   }
 
+  function precoChips() {
+    acomps.forEach(function (a, i) {
+      var el = $('bk-a' + (i + 1) + '-preco'); if (!el) return;
+      var p = precoPassageiro(viagemAtual, idadeNaViagem(a.nasc, viagemAtual));
+      el.textContent = p.pendente ? 'Valor: ' + brl(p.valor) + ' (informe a data de nascimento)' : (p.valor === 0 ? 'Não paga · ' + p.rotulo : brl(p.valor) + ' · ' + p.rotulo);
+      el.style.background = p.valor === 0 ? '#E6F4EA' : p.infantil ? '#FFF1E6' : '#EEF5FC';
+      el.style.color = p.valor === 0 ? '#1E5B37' : p.infantil ? '#7A3608' : '#0A4D8C';
+    });
+  }
+
   function updateSummary() {
     $('bk-parc-wrap').hidden = pagamento !== 'credito';
-    $('bk-sum-left').textContent = (pax === 1 ? '1 passageiro' : pax + ' passageiros') + ' × ' + brl(viagemAtual ? viagemAtual.valor : 0);
+    precoChips();
+    $('bk-sum-left').textContent = (pax === 1 ? '1 passageiro' : pax + ' passageiros') + ' (' + resumoPassageiros() + ')';
     var nomes = { pix: 'Pix', credito: 'Cartão de crédito', debito: 'Cartão de débito' };
     $('bk-pay-label').textContent = pagamento === 'credito'
       ? parcelas + 'x de aprox. ' + brl(total() / parcelas)
@@ -309,6 +380,7 @@
     $('bk-trip-name').textContent = v.destino;
     $('bk-trip-meta').textContent = v.data + ' · ' + v.dia + ' · ' + v.obs;
     $('bk-trip-price').textContent = brl(v.valor);
+    $('bk-kids').textContent = regraCriancas(v);
     updateSummary();
     lastFocus = document.activeElement;
     booking.hidden = false;
@@ -362,6 +434,7 @@
     if (i == null || k === 'dif') return;
     if (k === 'cpf') el.value = maskCpf(el.value);
     acomps[+i][k] = el.value;
+    if (k === 'nasc') updateSummary();
   });
   $('bk-acomps').addEventListener('focusout', function (e) {
     var el = e.target;
@@ -426,6 +499,7 @@
     if (!f.rg) miss.push('RG');
     if (!cpfValido(f.cpf)) miss.push(digits(f.cpf).length === 11 ? 'CPF válido' : 'CPF');
     if (!f.nasc) miss.push('data de nascimento');
+    else if (idadeNaViagem(f.nasc, viagemAtual) < 18) miss.push('contratante maior de 18 anos (o responsável pela reserva)');
     if (digits(f.tel).length < 10) miss.push('telefone');
     if (digits(f.cep).length !== 8) miss.push('CEP');
     if (!f.rua || !f.num || !f.bairro || !f.cidade) miss.push('endereço (rua, número, bairro e cidade)');
@@ -436,6 +510,7 @@
       if (!a.rg.trim()) faltam.push('RG');
       if (!cpfValido(a.cpf)) faltam.push(digits(a.cpf).length === 11 ? 'CPF válido' : 'CPF');
       if (!a.nasc) faltam.push('nascimento');
+      else if (idadeNaViagem(a.nasc, viagemAtual) < 0) faltam.push('data de nascimento válida');
       if (a.dif && !a.emb.trim()) faltam.push('local de embarque');
       if (faltam.length) miss.push('acompanhante ' + (i + 1) + ' (' + faltam.join(', ') + ')');
     });
@@ -459,7 +534,7 @@
       '*Destino:* ' + v.destino,
       '*Data:* ' + v.data + ' (' + v.dia + ')',
       '*Valor por pessoa:* ' + brl(v.valor),
-      '*Passageiros:* ' + pax,
+      '*Passageiros:* ' + pax + ' (' + resumoPassageiros() + ')',
       '*Total:* ' + brl(total()), '',
       '*CONTRATANTE*',
       'Nome: ' + f.nome,
@@ -473,8 +548,10 @@
     lines.push('Embarque: ' + f.embarque);
     if (f.emgNome || f.emgTel) lines.push('Contato de emergência: ' + [f.emgNome, f.emgTel].filter(Boolean).join(' - '));
     acomps.forEach(function (a, i) {
+      var pp = precoPassageiro(v, idadeNaViagem(a.nasc, v));
       lines.push('', '*ACOMPANHANTE ' + (i + 1) + '*',
         'Nome: ' + a.nome.trim(), 'RG: ' + a.rg.trim(), 'CPF: ' + a.cpf, 'Nascimento: ' + comIdade(a.nasc),
+        'Valor: ' + (pp.valor === 0 ? 'não paga - ' + pp.rotulo : brl(pp.valor) + ' - ' + pp.rotulo),
         'Embarque: ' + (a.dif ? a.emb.trim() : 'mesmo do contratante (' + f.embarque + ')'));
     });
     if (f.saude) lines.push('', '*Necessidades / saúde:* ' + f.saude);
@@ -498,10 +575,11 @@
         contratante: {
           nome: f.nome, rg: f.rg, cpf: f.cpf, nascimento: fmtDate(f.nasc), idade: idade(f.nasc), telefone: f.tel, email: f.email,
           endereco: enderecoTexto(f), cep: f.cep, cidade: f.cidade, embarque: f.embarque,
-          emergenciaNome: f.emgNome, emergenciaTelefone: f.emgTel
+          emergenciaNome: f.emgNome, emergenciaTelefone: f.emgTel, valor: v.valor
         },
         acompanhantes: acomps.map(function (a) {
           return { nome: a.nome.trim(), rg: a.rg.trim(), cpf: a.cpf, nascimento: fmtDate(a.nasc), idade: idade(a.nasc),
+            valor: precoPassageiro(v, idadeNaViagem(a.nasc, v)).valor,
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },

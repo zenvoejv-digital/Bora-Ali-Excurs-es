@@ -34,6 +34,7 @@ Use **Implantar › Gerenciar implantações › editar (lápis) › Versão: No
 
 ## Uso no dia a dia
 
+- **Valor de cada passageiro:** a última coluna da aba Reservas mostra quanto cada um paga (crianças isentas aparecem com 0). O *Total da reserva*, na linha do contratante, já soma tudo.
 - **Reservas:** quando o cliente pagar o sinal, mude o *Status* para **Sinal pago**. Se cancelar, use **Cancelada**: a vaga volta para o site.
 - **Agenda:** cada linha é uma viagem. Coluna `vagas` = total de lugares (vazio = não controla). Coluna `ativo` = escreva **não** para esconder a viagem. O `id` não deve mudar depois que já houver reservas. As categorias aceitas são `fds`, `praia`, `parques`, `natureza` e `passeios`.
 - **Buscar uma reserva (quando o cliente mandar o código):**
