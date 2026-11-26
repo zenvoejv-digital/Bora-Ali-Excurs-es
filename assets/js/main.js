@@ -34,7 +34,7 @@
     var aviso = document.createElement('div');
     aviso.setAttribute('role', 'note');
     aviso.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:40;background:#FFE2C4;color:#7A3608;font:800 13px Inter,sans-serif;letter-spacing:.5px;padding:10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(6,40,77,.2)';
-    aviso.textContent = 'DEMONSTRAÇÃO · vagas, Pix e avaliação com dados fictícios';
+    aviso.innerHTML = 'DEMONSTRAÇÃO · dados fictícios · <a href="/demo/planilha" style="color:#7A3608">ver a planilha de reservas</a>';
     document.body.appendChild(aviso);
   }
 

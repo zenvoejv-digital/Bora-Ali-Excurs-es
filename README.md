@@ -67,6 +67,8 @@ Depois de ter o domínio, vale trocar no `index.html` o `og:image` para o endere
 
 Abra o site com **`?demo=1`** no fim do endereço (ex.: `https://seusite.com.br/?demo=1`) para mostrar ao cliente as funções que dependem de dados reais: vagas e "Esgotado", Pix copia e cola e botão de avaliação, todos com dados fictícios. Nada é enviado para a planilha nesse modo, e quem abre o endereço normal não vê a demonstração.
 
+Para mostrar como a agência recebe os cadastros, abra **`/demo/planilha`**: é uma página de apresentação com dados fictícios da planilha (reservas, lista de embarque e vagas). Ela não aparece no Google.
+
 ## Testar no computador
 
 Na pasta do projeto:
