@@ -7,6 +7,7 @@ Com a planilha ligada ao site:
 - as **vagas** são contadas sozinhas, e o site mostra "Restam X vagas" e "Esgotado" (reservas *Canceladas* devolvem a vaga);
 - a **agenda** do site pode ser editada direto na aba *Agenda*, sem mexer em código;
 - dá para **buscar qualquer reserva pelo código**, nome, CPF ou telefone;
+- a aba **Clientes** é o painel dos gestores: histórico de cada cliente, risco de perda e viagem recomendada para o perfil;
 - o menu **Bora Ali** gera a **lista de embarque** de cada viagem e as **mensagens de pós-viagem** com o link de avaliação.
 
 > O site **não lê** dados pessoais da planilha. Ele só envia as reservas e lê a agenda e a contagem de vagas.
@@ -39,6 +40,14 @@ Use **Implantar › Gerenciar implantações › editar (lápis) › Versão: No
   - **Aba Buscar** (a primeira da planilha): digite na célula laranja o **código** (ex.: `BA-K3F9Q2`), parte do **nome**, o **CPF** (com ou sem pontos) ou o **telefone**, e aperte Enter. Todos os passageiros daquela reserva aparecem embaixo, na hora.
   - **Menu Bora Ali › Buscar reserva:** abre uma janela com o resumo da reserva (status, passageiros, pagamento, sinal e telefone) e já deixa as linhas selecionadas na aba Reservas, prontas para mudar o status.
   - Se a planilha foi criada antes dessa função, use **Bora Ali › Ir para a aba de busca** uma vez para criar a aba.
+- **Painel de clientes (para os gestores), menu Bora Ali › Atualizar painel de clientes:** cria a aba **Clientes**, com uma linha por cliente (agrupado pelo CPF):
+  - nome completo, CPF, e-mail, telefone e cidade;
+  - quantas viagens fez, cancelamentos, total gasto, primeira e última reserva, último destino e destinos já feitos;
+  - **perfil**: categoria preferida, "viaja com crianças", "em grupo" ou "sozinho(a)", "cliente fiel";
+  - **risco de perda** pela data da última reserva: Ativo / Novo (até 90 dias), Atenção (91 a 180), Em risco (181 a 365) e Perdido (mais de 365). Os prazos ficam no topo do script. A aba vem com filtro, e os clientes em risco aparecem primeiro;
+  - **viagem recomendada**: da categoria preferida, um destino que ele ainda não fez (quem viaja com crianças tem prioridade em parques). O link **"Enviar recomendação"** abre o WhatsApp do cliente com a mensagem pronta, mas **só para quem marcou "Quero receber novidades"** na reserva (LGPD). Acompanhantes aparecem como "Falar com o contratante".
+  - **Menu Bora Ali › Ficha do cliente:** busque pelo CPF, nome ou e-mail e veja todo o histórico dele (cada reserva, passageiros, status e valores), com RG, nascimento e endereço.
+  - **Menu Bora Ali › Atualizar o painel sozinho todo dia:** liga a atualização automática da aba Clientes, todo dia por volta das 6h.
 - **Menu Bora Ali › Gerar lista de embarque:** escolha a viagem e é criada uma aba com todos os passageiros, organizada por cidade de embarque e com a contagem por cidade, pronta para imprimir.
 - **Menu Bora Ali › Mensagens pós-viagem:** cria uma aba com um botão "Abrir WhatsApp" para cada cliente, com a mensagem de agradecimento e o link de avaliação.
 

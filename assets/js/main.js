@@ -34,7 +34,7 @@
     var aviso = document.createElement('div');
     aviso.setAttribute('role', 'note');
     aviso.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:40;background:#FFE2C4;color:#7A3608;font:800 13px Inter,sans-serif;letter-spacing:.5px;padding:10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(6,40,77,.2)';
-    aviso.innerHTML = 'DEMONSTRAÇÃO · dados fictícios · <a href="/demo/planilha" style="color:#7A3608">ver a planilha de reservas</a>';
+    aviso.innerHTML = 'DEMONSTRAÇÃO · dados fictícios · <a href="/demo/planilha" style="color:#7A3608">ver a planilha de reservas</a> · <a href="/demo/admin" style="color:#7A3608">painel de clientes</a>';
     document.body.appendChild(aviso);
   }
 
@@ -304,7 +304,7 @@
     $('bk-obs').value = ''; $('bk-saude').value = '';
     $('bk-form').hidden = false; $('bk-done').hidden = true;
     syncAcomps();
-    $('bk-ok').checked = false;
+    $('bk-ok').checked = false; $('bk-news').checked = false;
     clearMessages();
     $('bk-trip-name').textContent = v.destino;
     $('bk-trip-meta').textContent = v.data + ' · ' + v.dia + ' · ' + v.obs;
@@ -412,7 +412,7 @@
       comp: $('bk-comp').value.trim(), bairro: $('bk-bairro').value.trim(), cidade: $('bk-cidade').value.trim(),
       emgNome: $('bk-emg-nome').value.trim(), emgTel: $('bk-emg-tel').value,
       embarque: $('bk-emb').value, saude: $('bk-saude').value.trim(), obs: $('bk-obs').value.trim(),
-      ok: $('bk-ok').checked
+      ok: $('bk-ok').checked, novidades: $('bk-news').checked
     };
   }
   function enderecoTexto(f) {
@@ -484,6 +484,7 @@
       '',
       '_Reserva realizada mediante sinal de 50% do valor. Em caso de cancelamento, não haverá estorno. Pagamento concluído antes do passeio._');
     if (f.obs) lines.push('', '*Observações:* ' + f.obs);
+    lines.push('', 'Aceita receber novidades: ' + (f.novidades ? 'Sim' : 'Não'));
 
     var numero = NUMEROS[Math.floor(Math.random() * NUMEROS.length)];
     var link = 'https://wa.me/' + numero + '?text=' + encodeURIComponent(lines.join('\n'));
@@ -504,7 +505,7 @@
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },
-        saude: f.saude, observacoes: f.obs
+        saude: f.saude, observacoes: f.obs, aceitaNovidades: f.novidades
       };
       try {
         fetch(PLANILHA, { method: 'POST', mode: 'no-cors', keepalive: true,

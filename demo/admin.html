@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de clientes — demonstração | Bora Ali Excursões</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&amp;family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F4F7FB;font-family:'Inter',system-ui,sans-serif;color:#0F1B2D}
+a{color:#0A4D8C}
+.wrap{max-width:1440px;margin:0 auto;padding:clamp(20px,4vw,48px);display:flex;flex-direction:column;gap:24px}
+.tag{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:1px;color:#7A3608;background:#FFE2C4;padding:5px 12px;border-radius:999px}
+h1{font-family:'Poppins',sans-serif;margin:0;font-size:clamp(28px,4vw,40px);color:#0A4D8C}
+h2{font-family:'Poppins',sans-serif;margin:0;font-size:20px;color:#0A4D8C}
+.muted{color:#55657A;font-size:15px;line-height:1.5;margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:999px;font:inherit;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;border:none}
+.btn-o{background:#F47B20;color:#06284D}.btn-b{background:#FFFFFF;color:#0A4D8C;border:2px solid #0A4D8C}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:#FFFFFF;border:2px solid #E4EDF6;border-radius:18px;padding:16px;text-align:left;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:4px;min-height:88px}
+.kpi[aria-pressed="true"]{border-color:#0A4D8C;box-shadow:0 0 0 3px rgba(10,77,140,.12)}
+.kpi b{font-family:'Poppins',sans-serif;font-size:30px;line-height:1}
+.kpi span{font-size:14px;font-weight:700}
+.card{background:#FFFFFF;border:1px solid #E4EDF6;border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.busca{flex:1 1 320px;max-width:560px;font:inherit;font-size:16px;padding:12px 14px;min-height:48px;border:2px solid #F47B20;border-radius:12px;background:#FFF8F0;outline:none}
+.tabela{overflow-x:auto;border:1px solid #E4EDF6;border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:1180px}
+th{padding:10px 12px;text-align:left;font-size:13px;color:#FFFFFF;background:#0A4D8C;white-space:nowrap}
+td{padding:12px;font-size:14px;border-bottom:1px solid #E4EDF6;vertical-align:top}
+tr:hover td{background:#F7FAFE}
+.risco{display:inline-block;font-weight:800;font-size:12px;padding:5px 10px;border-radius:999px;white-space:nowrap}
+.r-Ativo{background:#E6F4EA;color:#1E5B37}.r-Novo{background:#E2F1FC;color:#0A4D8C}.r-Atenção{background:#FFF1CC;color:#7A5300}.r-Em.risco,.r-Emrisco{background:#FDE2D2;color:#9A3412}.r-Perdido{background:#ECECEC;color:#55657A}
+.chip{display:inline-block;font-size:12px;font-weight:600;background:#EEF5FC;color:#0A4D8C;padding:3px 8px;border-radius:999px;margin:0 4px 4px 0}
+.small{font-size:13px;color:#55657A}
+.overlay{position:fixed;inset:0;z-index:20;display:flex;justify-content:flex-end}
+.overlay[hidden]{display:none}
+.fundo{position:absolute;inset:0;background:rgba(6,40,77,.55);border:none;cursor:pointer}
+.ficha{position:relative;width:100%;max-width:620px;height:100%;overflow-y:auto;background:#FFFFFF;display:flex;flex-direction:column;animation:entra .3s ease-out}
+@keyframes entra{from{transform:translateX(100%)}to{transform:none}}
+.ficha-top{background:#0A4D8C;color:#FFFFFF;padding:22px 24px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;z-index:1}
+.ficha-corpo{padding:22px 24px 32px;display:flex;flex-direction:column;gap:18px}
+.dados{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px;font-size:14px}
+.dados div span{display:block;font-size:12px;color:#55657A;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.msg{width:100%;font:inherit;font-size:14px;line-height:1.5;padding:12px;border:1.5px solid #C9D8E8;border-radius:12px;min-height:110px;resize:vertical}
+@media (prefers-reduced-motion: reduce){.ficha{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<a class="btn btn-o" href="/?demo=1">← Site (demonstração)</a>
+<a class="btn btn-b" href="/demo/planilha">Planilha de reservas</a>
+</div>
+<span class="tag">DEMONSTRAÇÃO · DADOS FICTÍCIOS</span>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h1>Painel de clientes</h1>
+<p class="muted" style="max-width:900px">Área dos gestores: cada cliente com o histórico de viagens, CPF, e-mail e contato, o risco de deixar de viajar com a agência e a próxima viagem recomendada para o perfil dele. Na versão real, este painel é a aba <strong>Clientes</strong> da planilha Google, protegida pelo login da agência.</p>
+</div>
+
+<div class="kpis" id="kpis" role="group" aria-label="Filtrar por risco"></div>
+
+<div class="card">
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+<h2 id="titulo-lista">Todos os clientes</h2>
+<label for="busca" class="small" style="position:absolute;left:-9999px">Buscar cliente</label>
+<input id="busca" class="busca" type="search" placeholder="Buscar por nome, CPF, e-mail ou cidade" autocomplete="off">
+</div>
+<div class="tabela"><table>
+<thead><tr><th>Cliente</th><th>CPF</th><th>Telefone</th><th>Viagens</th><th>Última reserva</th><th>Total gasto</th><th>Perfil</th><th>Risco</th><th>Recomendação</th><th></th></tr></thead>
+<tbody id="lista"></tbody>
+</table></div>
+<p class="small" style="margin:0"><strong>Como o risco é calculado</strong> (dias desde a última reserva): Ativo até 90 dias · Novo = 1ª viagem recente · Atenção de 91 a 180 · Em risco de 181 a 365 · Perdido acima de 365. Os prazos podem ser ajustados no script.</p>
+</div>
+</div>
+
+<div class="overlay" id="ficha" hidden>
+<button type="button" class="fundo" data-fechar aria-label="Fechar ficha"></button>
+<div class="ficha" role="dialog" aria-modal="true" aria-labelledby="f-nome">
+<div class="ficha-top">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+<span class="small" style="color:#DCE9F7;font-weight:700">FICHA DO CLIENTE</span>
+<button type="button" data-fechar aria-label="Fechar" class="btn" style="background:rgba(255,255,255,.14);color:#FFFFFF;width:44px;padding:0">✕</button>
+</div>
+<span id="f-nome" style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:700"></span>
+<span id="f-risco"></span>
+</div>
+<div class="ficha-corpo">
+<div class="dados" id="f-dados"></div>
+<div id="f-perfil"></div>
+<div class="card" style="background:#FFF8F0;border-color:#FFD2AE">
+<h2 style="color:#7A3608">Viagem recomendada</h2>
+<p class="muted" id="f-rec" style="color:#33445A"></p>
+<label for="f-msg" class="small" style="font-weight:700">Mensagem (dá para editar antes de enviar)</label>
+<textarea id="f-msg" class="msg"></textarea>
+<div id="f-acao"></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<h2>Histórico de viagens</h2>
+<div class="tabela"><table style="min-width:560px"><thead><tr><th>Reservado em</th><th>Destino</th><th>Data</th><th>Pessoas</th><th>Valor</th><th>Status</th><th>Código</th></tr></thead><tbody id="f-hist"></tbody></table></div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+var CLIENTES = [{"nome": "Gabriela Exemplo", "cpf": "000.000.000-07", "email": "gabriela.exemplo@email.com", "tel": "(11) 90000-0007", "cidade": "Itu/SP", "perfil": ["Prefere Praias", "Viaja em grupo", "Cliente fiel"], "risco": "Ativo", "dias": 12, "canceladas": 0, "gasto": 3289.9, "ultimo": "Ilhabela", "novidades": true, "rec": {"destino": "Maresias", "data": "21/02", "valor": 250}, "hist": [["14/11/2026", "Ilhabela", "02/01", 3, 750, "Sinal pago", "BA-QX12AB"], ["02/09/2026", "Guarujá", "07/09", 2, 460, "Pago", "BA-PL88CD"], ["10/06/2026", "Ubatuba", "22/06", 2, 520, "Pago", "BA-NM43EF"], ["15/03/2026", "Copacabana", "05/04", 3, 899.97, "Pago", "BA-KH21GH"], ["20/01/2026", "Boracéia / Bertioga", "07/02", 2, 460, "Pago", "BA-JD09IJ"], ["05/12/2025", "Prumirim", "20/12", 1, 199.93, "Pago", "BA-HC55KL"]]}, {"nome": "Ana Exemplo", "cpf": "000.000.000-01", "email": "ana.exemplo@email.com", "tel": "(11) 90000-0001", "cidade": "Salto/SP", "perfil": ["Prefere Parques", "Viaja com crianças"], "risco": "Ativo", "dias": 20, "canceladas": 0, "gasto": 1049.96, "ultimo": "Hopi Hari", "novidades": true, "rec": {"destino": "Cidade das Crianças", "data": "14/02", "valor": 230}, "hist": [["06/11/2026", "Hopi Hari", "16/01", 2, 399.98, "Sinal pago", "BA-L2Q4XA"], ["18/07/2026", "Wet'n Wild", "26/07", 2, 480, "Pago", "BA-GG71MN"], ["02/04/2026", "Zoológico de São Paulo", "12/04", 1, 169.98, "Pago", "BA-FF32OP"]]}, {"nome": "Elisa Exemplo", "cpf": "000.000.000-05", "email": "elisa.exemplo@email.com", "tel": "(19) 90000-0005", "cidade": "Campinas/SP", "perfil": ["Prefere Fins de semana", "Viaja sozinho(a)"], "risco": "Novo", "dias": 9, "canceladas": 0, "gasto": 899.99, "ultimo": "São Thomé das Letras", "novidades": true, "rec": {"destino": "Rio de Janeiro (Carnaval)", "data": "06 a 09/02", "valor": 1200}, "hist": [["17/11/2026", "São Thomé das Letras", "27 e 28/02", 1, 899.99, "Aguardando sinal", "BA-RT66QR"]]}, {"nome": "Bruno Exemplo", "cpf": "000.000.000-02", "email": "bruno.exemplo@email.com", "tel": "(15) 90000-0002", "cidade": "Sorocaba/SP", "perfil": ["Prefere Praias", "Viaja sozinho(a)"], "risco": "Atenção", "dias": 128, "canceladas": 0, "gasto": 480, "ultimo": "Maresias", "novidades": true, "rec": {"destino": "Ilhabela", "data": "02/01", "valor": 250}, "hist": [["21/07/2026", "Maresias", "09/08", 1, 250, "Pago", "BA-EE10ST"], ["11/02/2026", "Guarujá", "17/02", 1, 230, "Pago", "BA-DD87UV"]]}, {"nome": "Fábio Exemplo", "cpf": "000.000.000-06", "email": "fabio.exemplo@email.com", "tel": "(11) 90000-0006", "cidade": "Indaiatuba/SP", "perfil": ["Prefere Natureza", "Viaja em grupo"], "risco": "Atenção", "dias": 101, "canceladas": 1, "gasto": 660, "ultimo": "Campos do Jordão", "novidades": true, "rec": {"destino": "Pico do Lopo", "data": "14/02", "valor": 280}, "hist": [["17/08/2026", "Holambra", "30/08", 3, 0, "Cancelada", "BA-CC54WX"], ["03/05/2026", "Campos do Jordão", "24/05", 3, 660, "Pago", "BA-BB21YZ"]]}, {"nome": "Carla Exemplo", "cpf": "000.000.000-03", "email": "carla.exemplo@email.com", "tel": "(11) 90000-0003", "cidade": "Salto/SP", "perfil": ["Prefere Natureza", "Viaja em grupo", "Cliente fiel"], "risco": "Em risco", "dias": 212, "canceladas": 0, "gasto": 2140, "ultimo": "Extrema / MG", "novidades": true, "rec": {"destino": "Pico do Lopo", "data": "14/02", "valor": 280}, "hist": [["28/04/2026", "Extrema / MG", "10/05", 2, 399.98, "Pago", "BA-AA98AB"], ["15/02/2026", "Campos do Jordão", "01/03", 2, 440, "Pago", "BA-ZZ65CD"], ["09/11/2025", "Greencamp", "22/11", 2, 560, "Pago", "BA-YY32EF"], ["20/08/2025", "Holambra", "07/09", 2, 399.98, "Pago", "BA-XX09GH"], ["01/06/2025", "Serra Negra", "15/06", 2, 340.04, "Pago", "BA-WW76IJ"]]}, {"nome": "Hugo Exemplo", "cpf": "000.000.000-08", "email": "hugo.exemplo@email.com", "tel": "(11) 90000-0008", "cidade": "Itu/SP", "perfil": ["Prefere Passeios", "Viaja em grupo"], "risco": "Em risco", "dias": 296, "canceladas": 0, "gasto": 540, "ultimo": "Aparecida do Norte", "novidades": false, "rec": {"destino": "Serra Negra", "data": "17/01", "valor": 199.99}, "hist": [["04/02/2026", "Aparecida do Norte", "15/02", 3, 540, "Pago", "BA-VV43KL"]]}, {"nome": "Diego Exemplo", "cpf": "000.000.000-04", "email": "diego.exemplo@email.com", "tel": "(19) 90000-0004", "cidade": "Campinas/SP", "perfil": ["Prefere Passeios", "Viaja sozinho(a)"], "risco": "Perdido", "dias": 418, "canceladas": 0, "gasto": 150, "ultimo": "CTN", "novidades": true, "rec": {"destino": "Aparecida do Norte", "data": "10/01", "valor": 180}, "hist": [["04/10/2025", "CTN", "19/10", 1, 150, "Pago", "BA-UU10MN"]]}];
+(function () {
+  var CORES = { 'Ativo': ['#E6F4EA', '#1E5B37'], 'Novo': ['#E2F1FC', '#0A4D8C'], 'Atenção': ['#FFF1CC', '#7A5300'], 'Em risco': ['#FDE2D2', '#9A3412'], 'Perdido': ['#ECECEC', '#55657A'] };
+  var ORDEM = ['Em risco', 'Atenção', 'Perdido', 'Novo', 'Ativo'];
+  var filtro = 'Todos', ultimoFoco = null;
+  function $(id) { return document.getElementById(id); }
+  function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function brl(v) { var p = (Math.round(v * 100) / 100).toFixed(2).split('.'); return 'R$ ' + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + p[1]; }
+  function norm(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function badge(r) { var c = CORES[r]; return '<span class="risco" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(r) + '</span>'; }
+  function mensagem(c) {
+    var p = c.nome.split(' ')[0];
+    var abre = (c.risco === 'Ativo' || c.risco === 'Novo') ? 'Oi, ' + p + '! Tudo bem? 🧡' : 'Oi, ' + p + '! Que saudade de você nas nossas viagens! 🧡';
+    return abre + ' Como você curtiu ' + c.ultimo + ', separamos uma que é a sua cara: *' + c.rec.destino + '* em ' + c.rec.data + ', por ' + brl(c.rec.valor) + ' por pessoa. Quer que eu reserve sua vaga? — Bora Ali Excursões';
+  }
+  CLIENTES.sort(function (a, b) { return (ORDEM.indexOf(a.risco) - ORDEM.indexOf(b.risco)) || (b.gasto - a.gasto); });
+
+  function kpis() {
+    var cont = { 'Todos': CLIENTES.length };
+    CLIENTES.forEach(function (c) { cont[c.risco] = (cont[c.risco] || 0) + 1; });
+    $('kpis').innerHTML = ['Todos', 'Ativo', 'Novo', 'Atenção', 'Em risco', 'Perdido'].map(function (k) {
+      var cor = k === 'Todos' ? ['#FFFFFF', '#0A4D8C'] : CORES[k];
+      var rot = { 'Todos': 'Todos os clientes', 'Ativo': 'Ativos', 'Novo': 'Novos', 'Atenção': 'Atenção', 'Em risco': 'Em risco', 'Perdido': 'Perdidos' }[k];
+      return '<button type="button" class="kpi" data-filtro="' + k + '" aria-pressed="' + (filtro === k) + '" style="background:' + cor[0] + '"><b style="color:' + cor[1] + '">' + (cont[k] || 0) + '</b><span style="color:' + cor[1] + '">' + rot + '</span></button>';
+    }).join('');
+  }
+  function lista() {
+    var t = norm($('busca').value.trim()), dg = $('busca').value.replace(/\D/g, '');
+    var vis = CLIENTES.filter(function (c) {
+      if (filtro !== 'Todos' && c.risco !== filtro) return false;
+      if (!t) return true;
+      return norm([c.nome, c.email, c.cidade, c.cpf].join(' ')).indexOf(t) >= 0 || (dg.length >= 3 && c.cpf.replace(/\D/g, '').indexOf(dg) >= 0);
+    });
+    $('titulo-lista').textContent = (filtro === 'Todos' ? 'Todos os clientes' : 'Clientes: ' + filtro) + ' (' + vis.length + ')';
+    $('lista').innerHTML = vis.length ? vis.map(function (c) {
+      var i = CLIENTES.indexOf(c);
+      return '<tr>' +
+        '<td><strong>' + esc(c.nome) + '</strong><div class="small">' + esc(c.email) + '</div><div class="small">' + esc(c.cidade) + '</div></td>' +
+        '<td style="white-space:nowrap">' + esc(c.cpf) + '</td>' +
+        '<td style="white-space:nowrap">' + esc(c.tel) + '</td>' +
+        '<td>' + c.hist.filter(function (h) { return h[5] !== 'Cancelada'; }).length + (c.canceladas ? '<div class="small">' + c.canceladas + ' cancelada</div>' : '') + '</td>' +
+        '<td style="white-space:nowrap">há ' + c.dias + ' dias<div class="small">' + esc(c.ultimo) + '</div></td>' +
+        '<td style="white-space:nowrap">' + brl(c.gasto) + '</td>' +
+        '<td style="min-width:170px">' + c.perfil.map(function (p) { return '<span class="chip">' + esc(p) + '</span>'; }).join('') + '</td>' +
+        '<td>' + badge(c.risco) + '</td>' +
+        '<td style="min-width:170px"><strong>' + esc(c.rec.destino) + '</strong><div class="small">' + esc(c.rec.data) + ' · ' + brl(c.rec.valor) + '</div></td>' +
+        '<td><button type="button" class="btn btn-b" data-ficha="' + i + '" style="white-space:nowrap">Ver ficha</button></td>' +
+        '</tr>';
+    }).join('') : '<tr><td colspan="10" style="color:#7A3608;background:#FFF1E6">Nenhum cliente encontrado.</td></tr>';
+  }
+  function abrirFicha(c) {
+    ultimoFoco = document.activeElement;
+    $('f-nome').textContent = c.nome;
+    $('f-risco').innerHTML = badge(c.risco) + ' <span style="color:#DCE9F7;font-size:14px">· última reserva há ' + c.dias + ' dias</span>';
+    var feitas = c.hist.filter(function (h) { return h[5] !== 'Cancelada'; }).length;
+    $('f-dados').innerHTML = [['CPF', c.cpf], ['E-mail', c.email], ['Telefone', c.tel], ['Cidade', c.cidade], ['Viagens', feitas + (c.canceladas ? ' (+' + c.canceladas + ' cancelada)' : '')], ['Total gasto', brl(c.gasto)], ['Aceita novidades', c.novidades ? 'Sim' : 'Não']]
+      .map(function (d) { return '<div><span>' + d[0] + '</span>' + esc(d[1]) + '</div>'; }).join('');
+    $('f-perfil').innerHTML = c.perfil.map(function (p) { return '<span class="chip" style="font-size:13px;padding:5px 10px">' + esc(p) + '</span>'; }).join('');
+    $('f-rec').innerHTML = '<strong>' + esc(c.rec.destino) + '</strong> — ' + esc(c.rec.data) + ' · ' + brl(c.rec.valor) + ' por pessoa. Escolhida pelo perfil e por ser um destino que ' + esc(c.nome.split(' ')[0]) + ' ainda não fez.';
+    $('f-msg').value = mensagem(c);
+    $('f-acao').innerHTML = c.novidades
+      ? '<button type="button" class="btn btn-o" id="enviar">Enviar pelo WhatsApp</button> <span class="small">Na demonstração, o WhatsApp abre para você escolher o contato.</span>'
+      : '<p style="margin:0;background:#FFF1E6;border-radius:12px;padding:12px 14px;font-size:14px;color:#7A3608"><strong>Cliente não autorizou receber novidades.</strong> Pela LGPD, só envie sugestões para quem marcou essa opção na reserva.</p>';
+    $('f-hist').innerHTML = c.hist.map(function (h) {
+      var cor = h[5] === 'Cancelada' ? '#9A3412' : h[5] === 'Pago' ? '#1E5B37' : '#7A3608';
+      return '<tr><td>' + esc(h[0]) + '</td><td><strong>' + esc(h[1]) + '</strong></td><td>' + esc(h[2]) + '</td><td>' + h[3] + '</td><td style="white-space:nowrap">' + (h[4] ? brl(h[4]) : '—') + '</td><td style="color:' + cor + ';font-weight:700">' + esc(h[5]) + '</td><td style="white-space:nowrap">' + esc(h[6]) + '</td></tr>';
+    }).join('');
+    $('ficha').hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('ficha').querySelector('[role=dialog]').scrollTop = 0;
+    $('ficha').querySelector('[data-fechar].btn').focus();
+  }
+  function fechar() { $('ficha').hidden = true; document.body.style.overflow = ''; if (ultimoFoco) ultimoFoco.focus(); }
+
+  $('kpis').addEventListener('click', function (e) { var b = e.target.closest('[data-filtro]'); if (!b) return; filtro = b.getAttribute('data-filtro'); kpis(); lista(); });
+  $('busca').addEventListener('input', lista);
+  $('lista').addEventListener('click', function (e) { var b = e.target.closest('[data-ficha]'); if (b) abrirFicha(CLIENTES[+b.getAttribute('data-ficha')]); });
+  $('ficha').addEventListener('click', function (e) {
+    if (e.target.closest('[data-fechar]')) { fechar(); return; }
+    if (e.target.id === 'enviar') window.open('https://wa.me/?text=' + encodeURIComponent($('f-msg').value), '_blank', 'noopener');
+  });
+  $('ficha').addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+  kpis(); lista();
+})();
+</script>
+</body>
+</html>
