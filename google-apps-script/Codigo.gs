@@ -12,6 +12,10 @@ var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Cancelada'];
 var DIAS_ATIVO = 90;       // até 90 dias: Ativo
 var DIAS_ATENCAO = 180;    // 91 a 180: Atenção
 var DIAS_RISCO = 365;      // 181 a 365: Em risco · acima disso: Perdido
+// Menores de idade: ano das viagens da agenda (para calcular a idade no dia do passeio) e pasta das autorizações no Drive
+var ANO_VIAGENS = 2027;
+var PASTA_AUTORIZACOES = 'Bora Ali - Autorizações de menores';
+var COR_MENOR = '#ffe8d6';
 // =====================
 
 var ABA_RESERVAS = 'Reservas';
@@ -21,7 +25,12 @@ var ABA_CLIENTES = 'Clientes';
 var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 'Data', 'Tipo', 'Nome', 'RG', 'CPF',
   'Nascimento', 'Idade', 'Telefone', 'E-mail', 'Endereço', 'Embarque', 'Emergência (nome)', 'Emergência (tel.)',
   'Necessidades / saúde', 'Pagamento', 'Parcelas', 'Total da reserva', 'Sinal (50%)', 'Observações', 'WhatsApp que recebeu',
-  'Aceita novidades', 'Valor do passageiro', 'Autorização do menor'];
+  'Aceita novidades', 'Valor do passageiro', 'Autorização do menor',
+  'Contratante é (menor)', 'Responsável (nome)', 'Responsável é', 'Responsável (CPF)', 'Responsável (RG)', 'Responsável (telefone)',
+  'Link da autorização', 'Autorização entregue'];
+// colunas (1 = A) usadas pelas autorizações
+var COL_AUT = 28, COL_VINC = 29, COL_LINK = 35, COL_ENTREGUE = 36;
+var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Parente', outro: 'Outra pessoa' };
 var CAB_AGENDA = ['id', 'data', 'dia', 'destino', 'categoria', 'valor', 'obs', 'selo', 'mes', 'cena', 'vagas', 'ativo'];
 
 // ---------- menu ----------
@@ -37,6 +46,10 @@ function onOpen() {
     .addItem('Atualizar o painel sozinho todo dia', 'ativarAtualizacaoDiaria')
     .addSeparator()
     .addItem('Gerar lista de embarque', 'gerarListaEmbarque')
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('Menores de idade')
+      .addItem('Gerar/atualizar autorização (linhas selecionadas)', 'gerarAutorizacaoSelecionada')
+      .addItem('Conferir menores em todas as reservas', 'atualizarMenores')
+      .addItem('Refazer autorizações sozinho ao editar', 'ativarAutorizacaoAutomatica'))
     .addItem('Mensagens pós-viagem (avaliação)', 'mensagensPosViagem')
     .addToUi();
 }
@@ -52,6 +65,7 @@ function configurarPlanilha() {
     var regra = SpreadsheetApp.newDataValidation().requireValueInList(STATUS, true).build();
     r.getRange('C2:C').setDataValidation(regra);
     r.getRange('B:B').setFontWeight('bold');
+    validacoesMenores_(r);
     r.setColumnWidths(1, CAB_RESERVAS.length, 140);
   }
   var a = ss.getSheetByName(ABA_AGENDA) || ss.insertSheet(ABA_AGENDA);
@@ -87,7 +101,7 @@ function criarAbaBusca_() {
   var col = 'Reservas!';
   var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
   b.getRange('A5').setFormula(
-    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AB,' +
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AJ,' +
     '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
     '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
     '"Nada encontrado. Confira o código ou tente parte do nome."))');
@@ -141,7 +155,7 @@ function buscarReserva() {
   html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
   var ss = SpreadsheetApp.getActive();
   ss.setActiveSheet(r);
-  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AB' + a.linha; })).activate();
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AJ' + a.linha; })).activate();
   ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
     achadas.length + ' linha(s) encontrada(s)');
 }
@@ -166,13 +180,16 @@ function doPost(e) {
     var base = [agora, d.codigo, STATUS[0], v.id, v.destino, v.data];
     var linhas = [];
     linhas.push(base.concat(['Contratante', c.nome, c.rg, c.cpf, c.nascimento, c.idade, c.telefone, c.email, c.endereco,
-      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, '']));
+      c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, '',
+      '', '', '', '', '', '', '', '']));
     (d.acompanhantes || []).slice(0, 20).forEach(function (a) {
       linhas.push(base.concat(['Acompanhante de ' + c.nome, a.nome, a.rg, a.cpf, a.nascimento, a.idade, c.telefone, '', '',
-        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || '']));
+        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor))));
     });
     linhas = linhas.map(function (l) { return l.map(limpa_); });
     sh.getRange(sh.getLastRow() + 1, 1, linhas.length, CAB_RESERVAS.length).setValues(linhas);
+    // menores: destaca e gera a autorização em PDF no Drive
+    try { prepararMenores_(sh, [d.codigo], false); } catch (errMenor) { /* a reserva já foi gravada; a autorização pode ser gerada pelo menu */ }
     return json_({ ok: true });
   } catch (err) {
     return json_({ ok: false });
@@ -220,22 +237,27 @@ function gerarListaEmbarque() {
   var sh = ss.getSheetByName(nome);
   if (sh) sh.clear(); else sh = ss.insertSheet(nome);
   pax.sort(function (a, b) { return String(a.embarque).localeCompare(b.embarque) || String(a.nome).localeCompare(b.nome); });
-  var out = [[NOME_AGENCIA + ' — Lista de passageiros', '', '', '', '', '', '', '', ''],
-    ['Destino: ' + v.destino, 'Data: ' + v.data, 'Total: ' + pax.length + ' passageiros', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', '', ''],
-    ['Nº', 'Embarque', 'Nome', 'RG', 'CPF', 'Idade', 'Telefone', 'Emergência', 'Status / Código']];
+  var V = function () { return ['', '', '', '', '', '', '', '', '', '']; };
+  var nMenores = pax.filter(function (p) { return p.menor; }).length;
+  var pendentes = pax.filter(function (p) { return p.menor && !p.entregue; }).length;
+  var out = [[NOME_AGENCIA + ' — Lista de passageiros', '', '', '', '', '', '', '', '', ''],
+    ['Destino: ' + v.destino, 'Data: ' + v.data, 'Total: ' + pax.length + ' passageiros', nMenores ? 'Menores: ' + nMenores + (pendentes ? ' (' + pendentes + ' sem autorização entregue)' : ' (todas as autorizações entregues)') : '', '', '', '', '', '', ''],
+    V(),
+    ['Nº', 'Embarque', 'Nome', 'RG', 'CPF', 'Idade na viagem', 'Telefone', 'Emergência', 'Status / Código', 'Menor / autorização']];
   pax.forEach(function (p, i) {
-    out.push([i + 1, p.embarque, p.nome, p.rg, p.cpf, p.idade, p.telefone, [p.emgNome, p.emgTel].filter(String).join(' - '), p.status + ' / ' + p.codigo]);
+    out.push([i + 1, p.embarque, p.nome, p.rg, p.cpf, p.idadeViagem == null ? p.idade : p.idadeViagem, p.telefone, [p.emgNome, p.emgTel].filter(String).join(' - '), p.status + ' / ' + p.codigo,
+      p.menor ? (p.entregue ? 'Menor · autorização entregue' : 'MENOR · CONFERIR AUTORIZAÇÃO' + (/firma reconhecida/.test(p.aut) ? ' (firma reconhecida)' : '')) : '']);
   });
   var porCidade = {};
   pax.forEach(function (p) { porCidade[p.embarque] = (porCidade[p.embarque] || 0) + 1; });
-  out.push(['', '', '', '', '', '', '', '', '']);
-  Object.keys(porCidade).forEach(function (k) { out.push(['', k, porCidade[k] + ' passageiro(s)', '', '', '', '', '', '']); });
-  sh.getRange(1, 1, out.length, 9).setValues(out.map(function (l) { return l.map(limpa_); }));
+  out.push(V());
+  Object.keys(porCidade).forEach(function (k) { var l = V(); l[1] = k; l[2] = porCidade[k] + ' passageiro(s)'; out.push(l); });
+  sh.getRange(1, 1, out.length, 10).setValues(out.map(function (l) { return l.map(limpa_); }));
   sh.getRange(1, 1).setFontSize(14).setFontWeight('bold');
-  sh.getRange(4, 1, 1, 9).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
+  sh.getRange(4, 1, 1, 10).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
+  pax.forEach(function (p, i) { if (p.menor) sh.getRange(5 + i, 1, 1, 10).setBackground(p.entregue ? '#e6f4ea' : COR_MENOR); });
   sh.setFrozenRows(4);
-  sh.autoResizeColumns(1, 9);
+  sh.autoResizeColumns(1, 10);
   ss.setActiveSheet(sh);
   SpreadsheetApp.getUi().alert('Lista criada na aba "' + nome + '". Para imprimir: Arquivo › Imprimir.');
 }
@@ -480,8 +502,10 @@ function passageirosDa_(id) {
   return r.getRange(2, 1, r.getLastRow() - 1, CAB_RESERVAS.length).getDisplayValues()
     .filter(function (l) { return l[3] === id && l[2] !== 'Cancelada'; })
     .map(function (l) {
+      var iv = idadeNaViagem_(l[10], l[5]);
       return { codigo: l[1], status: l[2], nome: l[7], rg: l[8], cpf: l[9], idade: l[11], telefone: l[12],
-        embarque: l[15], emgNome: l[16], emgTel: l[17] };
+        embarque: l[15], emgNome: l[16], emgTel: l[17], idadeViagem: iv,
+        menor: iv != null && iv >= 0 && iv < 18 && !/^Contratante/.test(l[6]), entregue: String(l[35]).toUpperCase() === 'TRUE', aut: l[27] };
     });
 }
 
@@ -533,3 +557,233 @@ var AGENDA_INICIAL = [
     ["rincao-fev-28", "28/02", "Domingo", "Rincão", "passeios", 280.0, "Bate e volta", "", "Fevereiro", "rincao", "", "sim"],
     ["ctn-fev-28", "28/02", "Domingo", "CTN", "passeios", 150.0, "Centro de Tradições Nordestinas", "", "Fevereiro", "ctn", "", "sim"]
 ];
+
+// ======================================================================
+// MENORES DE IDADE: destaque, autorização em PDF e atualização automática
+// ======================================================================
+
+// valores das colunas AC a AJ para um acompanhante vindo do site
+function colunasMenor_(m) {
+  if (!m) return ['', '', '', '', '', '', '', ''];
+  var r = m.responsavel || {};
+  return [VINC_ROTULO[m.vinculo] || '', r.nome || '', r.papel || '', r.cpf || '', r.rg || '', r.telefone || '', '', false];
+}
+
+function validacoesMenores_(sh) {
+  var v = function (lista) { return SpreadsheetApp.newDataValidation().requireValueInList(lista, true).setAllowInvalid(false).build(); };
+  sh.getRange(2, COL_VINC, sh.getMaxRows() - 1, 1).setDataValidation(v(Object.keys(VINC_ROTULO).map(function (k) { return VINC_ROTULO[k]; })));
+  sh.getRange(2, COL_VINC + 2, sh.getMaxRows() - 1, 1).setDataValidation(v(AUT_.PAPEIS));
+}
+
+// "10/08/2016" ou "2016-08-10" (ou Date) -> "2016-08-10"
+function isoDe_(x) {
+  if (x instanceof Date) return Utilities.formatDate(x, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var t = String(x || '').trim(), m;
+  if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t))) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  return '';
+}
+function idadeNaViagem_(nasc, dataViagem) { return AUT_.idade(isoDe_(nasc), String(dataViagem || ''), ANO_VIAGENS); }
+
+function chaveVinculo_(rotulo) {
+  var t = String(rotulo || '').trim().toLowerCase();
+  for (var k in VINC_ROTULO) if (VINC_ROTULO[k].toLowerCase() === t || k === t) return k;
+  return '';
+}
+
+// Confere as linhas das reservas indicadas (ou todas): destaca menores e gera/atualiza a autorização.
+// forcar = refaz o PDF mesmo que já exista (usado quando alguém edita a reserva).
+function prepararMenores_(sh, codigos, forcar) {
+  var n = sh.getLastRow() - 1;
+  var res = { menores: 0, pdfs: 0, pendentes: [] };
+  if (n < 1) return res;
+  var txt = sh.getRange(2, 1, n, CAB_RESERVAS.length).getDisplayValues();
+  var alvo = null;
+  if (codigos) { alvo = {}; codigos.forEach(function (c) { alvo[c] = 1; }); }
+  var contratantes = {};
+  txt.forEach(function (l) { if (/^Contratante/.test(l[6])) contratantes[l[1]] = l; });
+  var dias = {};
+  var ag = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA);
+  if (ag && ag.getLastRow() > 1) ag.getRange(2, 1, ag.getLastRow() - 1, 3).getDisplayValues().forEach(function (r) { dias[r[0]] = r[2]; });
+  txt.forEach(function (l, i) {
+    if (alvo && !alvo[l[1]]) return;
+    var linha = i + 2, faixa = sh.getRange(linha, 1, 1, CAB_RESERVAS.length);
+    var id = idadeNaViagem_(l[10], l[5]);
+    var menor = id != null && id >= 0 && id < 18 && !/^Contratante/.test(l[6]);
+    if (!menor) {
+      // deixou de ser menor (data ou nascimento corrigidos): tira o destaque e a autorização
+      if (String(faixa.getBackground()).toLowerCase() === COR_MENOR) faixa.setBackground(null);
+      if (/^Menor/.test(l[COL_AUT - 1])) sh.getRange(linha, COL_AUT).setValue('');
+      if (l[COL_LINK - 1]) { apagaArquivo_(l[COL_LINK - 1]); sh.getRange(linha, COL_LINK).setValue(''); }
+      return;
+    }
+    res.menores++;
+    faixa.setBackground(l[2] === 'Cancelada' ? '#eeeeee' : COR_MENOR);
+    var ent = String(l[COL_ENTREGUE - 1]).toUpperCase();
+    if (ent !== 'TRUE' && ent !== 'FALSE') sh.getRange(linha, COL_ENTREGUE).insertCheckboxes();
+    var c = contratantes[l[1]] || [];
+    var a = { nome: l[7], nasc: isoDe_(l[10]), rg: l[8], cpf: l[9], dif: c.length && l[15] !== c[15], emb: l[15],
+      vinc: chaveVinculo_(l[COL_VINC - 1]), rNome: l[29], rVinc: l[30], rCpf: l[31], rRg: l[32], rTel: l[33] };
+    var r = { codigo: l[1], ano: ANO_VIAGENS, v: { destino: l[4], data: l[5], dia: dias[l[3]] || '' },
+      f: { nome: c[7] || '', rg: c[8] || '', cpf: c[9] || '', tel: c[12] || '', embarque: c[15] || l[15], cidade: cidadeDe_(c[14]), saude: c[18] || '', emgNome: c[16] || '', emgTel: c[17] || '' } };
+    var falta = [];
+    if (!c.length) falta.push('linha do contratante');
+    if (!a.vinc) falta.push('quem é o contratante (coluna AC)');
+    else if (AUT_.precisaResp(a)) {
+      if (String(a.rNome).trim().split(/\s+/).length < 2) falta.push('nome do responsável (AD)');
+      if (!a.rVinc) falta.push('responsável é mãe, pai ou tutor (AE)');
+      if (!a.rCpf) falta.push('CPF do responsável (AF)');
+      if (!a.rRg) falta.push('RG do responsável (AG)');
+      if (!a.rTel) falta.push('telefone do responsável (AH)');
+    }
+    var resumo = 'Menor (' + id + (id === 1 ? ' ano' : ' anos') + ' na viagem): ' +
+      (falta.length ? 'autorização PENDENTE, falta ' + falta.join(', ') : 'autorização ' + AUT_.texto(a, r.f, id));
+    if (l[COL_AUT - 1] !== resumo) sh.getRange(linha, COL_AUT).setValue(resumo);
+    if (falta.length) {
+      res.pendentes.push(l[7] + ' (' + l[1] + ')');
+      if (l[COL_LINK - 1]) { apagaArquivo_(l[COL_LINK - 1]); sh.getRange(linha, COL_LINK).setValue(''); }   // não deixa um PDF desatualizado
+      return;
+    }
+    if (l[COL_LINK - 1] && !forcar) return;
+    var nome = ('Autorização - ' + l[7] + ' - ' + l[1] + '.pdf').replace(/[\\\/:*?"<>|]/g, '-');
+    sh.getRange(linha, COL_LINK).setValue(criarPdfAutorizacao_(AUT_.html(r, a), nome, l[COL_LINK - 1]));
+    res.pdfs++;
+  });
+  return res;
+}
+
+function criarPdfAutorizacao_(corpo, nome, linkAntigo) {
+  if (linkAntigo) apagaArquivo_(linkAntigo);
+  var pastas = DriveApp.getFoldersByName(PASTA_AUTORIZACOES);
+  var pasta = pastas.hasNext() ? pastas.next() : DriveApp.createFolder(PASTA_AUTORIZACOES);
+  var doc = '<html><head><meta charset="utf-8"><style>body{font-family:Arial,Helvetica,sans-serif;font-size:12pt;line-height:1.5;color:#111}' +
+    AUT_.CSS + '</style></head><body>' + corpo + '</body></html>';
+  var pdf = Utilities.newBlob(doc, 'text/html', 'autorizacao.html').getAs('application/pdf').setName(nome);
+  return pasta.createFile(pdf).getUrl();   // o arquivo fica privado na conta da agência
+}
+function apagaArquivo_(link) {
+  var m = /\/d\/([-\w]{20,})|id=([-\w]{20,})/.exec(String(link || ''));
+  if (!m) return;
+  try { DriveApp.getFileById(m[1] || m[2]).setTrashed(true); } catch (e) { /* já foi apagado */ }
+}
+
+// ---------- menu ----------
+function gerarAutorizacaoSelecionada() {
+  var ui = SpreadsheetApp.getUi(), ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName(ABA_RESERVAS);
+  var sel = ss.getActiveRange();
+  if (!sel || sel.getSheet().getName() !== ABA_RESERVAS || sel.getLastRow() < 2) { ui.alert('Selecione, na aba Reservas, a linha do menor (ou qualquer linha da reserva).'); return; }
+  var ini = Math.max(2, sel.getRow());
+  var cods = sh.getRange(ini, 2, sel.getLastRow() - ini + 1, 1).getDisplayValues().map(function (r) { return r[0]; }).filter(String);
+  var res = prepararMenores_(sh, unicos_(cods), true);
+  ui.alert(relatorioMenores_(res));
+}
+function atualizarMenores() {
+  var res = prepararMenores_(SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS), null, false);
+  SpreadsheetApp.getUi().alert(relatorioMenores_(res));
+}
+function relatorioMenores_(res) {
+  if (!res.menores) return 'Nenhum menor de idade nessas reservas.';
+  return res.menores + ' menor(es) destacados em laranja. ' + res.pdfs + ' autorização(ões) gerada(s) na pasta "' + PASTA_AUTORIZACOES + '" do Drive (link na coluna AI).' +
+    (res.pendentes.length ? '\n\nFaltam dados para: ' + res.pendentes.join(', ') + '. Veja a coluna AB.' : '');
+}
+function ativarAutorizacaoAutomatica() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'aoEditarReservas') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('aoEditarReservas').forSpreadsheet(SpreadsheetApp.getActive()).onEdit().create();
+  validacoesMenores_(SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS));
+  SpreadsheetApp.getUi().alert('Pronto! Quando alguém editar uma reserva com menor (nome, nascimento, data, responsável...), a autorização em PDF é refeita sozinha com os dados novos.');
+}
+// gatilho instalado por ativarAutorizacaoAutomatica
+function aoEditarReservas(e) {
+  if (!e || !e.range) return;
+  var sh = e.range.getSheet();
+  if (sh.getName() !== ABA_RESERVAS) return;
+  var r0 = Math.max(2, e.range.getRow()), r1 = e.range.getLastRow(), c0 = e.range.getColumn(), c1 = e.range.getLastColumn();
+  if (r1 < 2) return;
+  if (c0 >= COL_AUT && c1 <= COL_AUT) return;            // resumo escrito pelo próprio script
+  if (c0 >= COL_LINK && c1 <= COL_ENTREGUE) return;     // link e "entregue" não mudam o documento
+  if (c0 === 3 && c1 === 3) return;                     // só o status mudou
+  var cods = sh.getRange(r0, 2, r1 - r0 + 1, 1).getDisplayValues().map(function (r) { return r[0]; }).filter(String);
+  prepararMenores_(sh, unicos_(cods), true);
+}
+function unicos_(l) { var o = {}; l.forEach(function (x) { o[x] = 1; }); return Object.keys(o); }
+
+// Núcleo da autorização — cópia de assets/js/autorizacao.js (o mesmo texto do site).
+var AUT_ = (function () {
+  // <núcleo>
+  var VINCULOS = {
+    pai: 'Pai ou mãe do menor',
+    resp: 'Responsável legal do menor (tutor ou guarda)',
+    parente: 'Avô/avó, tio(a) ou irmão(ã) maior de idade',
+    outro: 'Outra pessoa (amigo, vizinho, padrinho...)'
+  };
+  var PAPEIS = ['Mãe', 'Pai', 'Tutor(a) ou guardião(ã)'];
+
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function dataBr(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (v || ''); }
+
+  // idade no dia do passeio ("16/01", "30 e 31/01", "06 a 09/02")
+  function idade(nascIso, dataViagem, ano) {
+    var n = /^(\d{4})-(\d{2})-(\d{2})$/.exec(nascIso || '');
+    var d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(dataViagem || '');
+    if (!n) return null;
+    var y = +(ano || new Date().getFullYear()), mes = d ? +d[2] : new Date().getMonth() + 1, dia = d ? +d[1] : new Date().getDate();
+    var a = y - +n[1];
+    if (mes < +n[2] || (mes === +n[2] && dia < +n[3])) a--;
+    return a;
+  }
+  function ehMenor(a, r) { var i = idade(a.nasc, r.v.data, r.ano); return i != null && i >= 0 && i < 18; }
+  function precisaResp(a) { return a.vinc === 'parente' || a.vinc === 'outro'; }
+  function exigeFirma(a, idadeNaViagem) { return idadeNaViagem < 16 && a.vinc === 'outro'; }
+  function quemAssina(a, f) {
+    if (precisaResp(a)) return { nome: (a.rNome || '').trim(), rg: (a.rRg || '').trim(), cpf: a.rCpf || '', tel: a.rTel || '', papel: a.rVinc || '' };
+    return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
+  }
+  function texto(a, f, idadeNaViagem) {
+    var q = quemAssina(a, f);
+    return 'assinada por ' + q.nome + (q.papel ? ' (' + q.papel.toLowerCase() + ')' : '') + (exigeFirma(a, idadeNaViagem) ? ', com firma reconhecida' : '') + ', entregue no embarque';
+  }
+
+  // r = { codigo, ano, v: { destino, data, dia }, f: { nome, rg, cpf, tel, embarque, cidade, saude, emgNome, emgTel } }
+  function html(r, a) {
+    var v = r.v, f = r.f, q = quemAssina(a, f), id = idade(a.nasc, v.data, r.ano), mesmo = !precisaResp(a);
+    var box = function (on) { return '<span class="ap-box">' + (on ? 'X' : '&nbsp;') + '</span>'; };
+    var ln = function (t) { return t ? '<strong>' + esc(t) + '</strong>' : '<span class="ap-blank"></span>'; };
+    var nota = exigeFirma(a, id)
+      ? '<strong>Firma reconhecida obrigatória.</strong> O(a) menor tem menos de 16 anos e viaja com quem não é parente próximo: reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Assinatura eletrônica (gov.br) não é aceita.'
+      : (id < 16 && a.vinc === 'parente'
+        ? 'O(a) menor viaja com parente: leve também um documento que comprove o parentesco (certidão de nascimento ou RG com filiação).'
+        : 'Leve esta autorização assinada e um documento com foto do(a) menor no dia do embarque.');
+    return '<section class="ap-doc">' +
+      '<table class="ap-head"><tr><td><strong class="ap-brand">Bora Ali Excursões</strong><br>Salto/SP · Reserva ' + esc(r.codigo) + '</td><td class="ap-right">' + esc(v.destino) + ' · ' + esc(v.data) + '</td></tr></table>' +
+      '<h1>Autorização de viagem para menor de idade</h1>' +
+      '<p>Eu, ' + ln(q.nome) + ', RG nº ' + ln(q.rg) + ', CPF nº ' + ln(q.cpf) + ', telefone ' + ln(q.tel) + ', na qualidade de ' +
+        box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === PAPEIS[2]) + ' tutor(a) ou guardião(ã),</p>' +
+      '<p><strong>AUTORIZO</strong> o(a) menor ' + ln((a.nome || '').trim()) + ', nascido(a) em ' + ln(dataBr(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + ln((a.rg || '').trim()) + ', CPF nº ' + ln(a.cpf) +
+        ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + (v.dia ? ' (' + esc(v.dia) + ')' : '') + '</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +
+      (mesmo
+        ? '<p>O(a) menor viajará acompanhado(a) por mim, responsável pela reserva, durante toda a excursão.</p>'
+        : '<p>O(a) menor viajará acompanhado(a) de ' + ln(f.nome) + ', RG nº ' + ln(f.rg) + ', CPF nº ' + ln(f.cpf) + ', telefone ' + ln(f.tel) + ', ' +
+          (a.vinc === 'parente' ? 'parente maior de idade do(a) menor' : 'pessoa maior de idade de minha confiança') + ', que se responsabiliza por ele(a) durante toda a excursão.</p>') +
+      '<p>Saúde e necessidades informadas: ' + esc(f.saude || 'nenhuma') + '. Contato de emergência: ' + esc([f.emgNome, f.emgTel].filter(Boolean).join(' - ') || q.nome + ' - ' + q.tel) + '.</p>' +
+      '<p>Em caso de emergência, autorizo ' + (mesmo ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
+      '<p class="ap-local">' + esc(f.cidade || '______________') + ', ____ de ______________ de ________.</p>' +
+      '<table class="ap-sign"><tr><td class="ap-assina"><div class="ap-line"></div>' + esc(q.nome) + '<br><small>Assinatura do(a) responsável legal</small></td><td class="ap-firma">Espaço para reconhecimento de firma</td></tr></table>' +
+      '<p class="ap-note">' + nota + '</p>' +
+    '</section>';
+  }
+
+  // </núcleo>
+  var CSS = '#aut-print{display:none}' +
+    '@media print{@page{size:A4;margin:16mm}body.imprimindo{background:#fff !important}body.imprimindo>*:not(#aut-print){display:none !important}' +
+    'body.imprimindo #aut-print{display:block !important;color:#111;font-family:Arial,Helvetica,sans-serif;font-size:12.5pt;line-height:1.55}}' +
+    '.ap-doc{page-break-after:always;break-after:page}.ap-doc:last-child{page-break-after:auto;break-after:auto}' +
+    '.ap-head{width:100%;border-collapse:collapse;border-bottom:2px solid #0A4D8C;margin-bottom:14px;font-size:10.5pt;color:#333}.ap-head td{padding:0 0 8px;vertical-align:bottom}.ap-right{text-align:right}.ap-brand{font-size:14pt;color:#0A4D8C}' +
+    '.ap-doc h1{font-size:15pt;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 16px}.ap-doc p{margin:0 0 11px;text-align:justify}' +
+    '.ap-box{display:inline-block;width:14px;height:14px;border:1.2px solid #111;text-align:center;line-height:13px;font-size:10pt;font-weight:700;vertical-align:-2px}' +
+    '.ap-blank{display:inline-block;min-width:160px;border-bottom:1px solid #111}.ap-local{margin-top:22px !important}' +
+    '.ap-sign{width:100%;border-collapse:separate;border-spacing:20px 0;margin:40px -20px 0;width:calc(100% + 40px)}.ap-assina{vertical-align:bottom;text-align:center;font-size:11pt}' +
+    '.ap-line{border-top:1px solid #111;margin-bottom:4px}' +
+    '.ap-firma{width:200px;height:110px;border:1px dashed #777;color:#777;font-size:9pt;text-align:center;vertical-align:middle;padding:6px}' +
+    '.ap-note{margin-top:22px !important;border:1px solid #F47B20;background:#FFF8F1;padding:8px 10px;font-size:10.5pt}';
+  return { VINCULOS: VINCULOS, PAPEIS: PAPEIS, idade: idade, precisaResp: precisaResp, exigeFirma: exigeFirma, texto: texto, html: html, CSS: CSS };
+})();

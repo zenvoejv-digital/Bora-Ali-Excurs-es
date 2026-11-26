@@ -64,37 +64,128 @@
 </div>
 </div>
 </div>
+<script src="/assets/js/autorizacao.js"></script>
 <script>
-/* Reservas de teste feitas no site com ?demo=1 ficam guardadas só neste navegador e aparecem aqui. */
+/* Reservas de teste feitas no site com ?demo=1 ficam guardadas só neste navegador e aparecem aqui.
+   Menores de idade ficam destacados, com a autorização pronta. Ao editar os dados, a autorização é refeita sozinha
+   (na planilha Google real isso acontece com o menu Bora Ali › Atualizar autorizações sozinho ao editar). */
 (function () {
+  var A = window.BoraAut;
   var td = 'padding: 10px 12px; font-size: 14px; color: #0F1B2D; border-bottom: 1px solid #E4EDF6; white-space: nowrap';
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  var lista = [];
-  try { lista = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]'); } catch (e) {}
+  var tb = document.getElementById('linhas-reservas');
+  // coluna nova na tabela
+  var trHead = document.querySelector('#tabela-reservas thead tr');
+  trHead.insertAdjacentHTML('beforeend', '<th style="padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; color: #FFFFFF; background: #0A4D8C; white-space: nowrap">Menor / autorização</th>');
+  Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) { tr.insertAdjacentHTML('beforeend', '<td style="' + td + '; color: #8496AB">-</td>'); });
+
+  function ler() { try { return JSON.parse(localStorage.getItem('boraDemoReservas') || '[]'); } catch (e) { return []; } }
+  function gravar(l) { try { localStorage.setItem('boraDemoReservas', JSON.stringify(l)); } catch (e) {} }
+  var lista = ler();
   if (!lista.length) return;
   document.getElementById('sem-teste').hidden = true;
   var status = '<span style="background: #FFF1E6; color: #7A3608; font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px">Aguardando sinal</span>';
   var novo = '<span style="background: #F47B20; color: #06284D; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 999px; margin-left: 6px">NOVA</span>';
-  var html = lista.map(function (r) {
-    return '<tr style="background: #FFF8F0">' +
-      '<td style="' + td + '">' + esc(r.hora) + '</td>' +
-      '<td style="' + td + '"><strong>' + esc(r.codigo) + '</strong>' + novo + '</td>' +
-      '<td style="' + td + '">' + status + '</td>' +
-      ['destino', 'data', 'tipo', 'nome', 'embarque', 'pagamento', 'total', 'sinal'].map(function (k) { return '<td style="' + td + '">' + esc(r[k]) + '</td>'; }).join('') +
-      '</tr>';
-  }).join('');
-  var tb = document.getElementById('linhas-reservas');
-  tb.insertAdjacentHTML('afterbegin', html);
+  var btn = 'font-family: inherit; cursor: pointer; border: 1.5px solid #0A4D8C; background: #FFFFFF; color: #0A4D8C; font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 999px; min-height: 36px';
+
+  function celulaMenor(r, i) {
+    if (!r.aut) return '<td style="' + td + '; color: #8496AB">-</td>';
+    var id = A.idade(r.aut.a.nasc, r.aut.r.v.data, r.aut.r.ano);
+    if (!(id >= 0 && id < 18)) return '<td style="' + td + '; color: #1E5B37; font-weight: 700">Não é mais menor na data do passeio</td>';
+    var firma = A.exigeFirma(r.aut.a, id) ? '<span style="background: #FDE2E2; color: #8A1C1C; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 999px">FIRMA RECONHECIDA</span>' : '';
+    return '<td style="' + td + '"><div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap">' +
+      '<span style="background: #F47B20; color: #06284D; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 999px">MENOR · ' + id + (id === 1 ? ' ANO' : ' ANOS') + '</span>' + firma +
+      '<button type="button" data-ver="' + i + '" style="' + btn + '">Ver autorização</button>' +
+      '<button type="button" data-editar="' + i + '" style="' + btn + '">Editar</button>' +
+      '<label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: ' + (r.aut.entregue ? '#1E5B37' : '#B4520A') + '"><input type="checkbox" data-entregue="' + i + '"' + (r.aut.entregue ? ' checked' : '') + ' style="width: 18px; height: 18px; accent-color: #2E8B57">' + (r.aut.entregue ? 'Entregue' : 'Pendente') + '</label>' +
+      '</div></td>';
+  }
+  function render() {
+    Array.prototype.forEach.call(tb.querySelectorAll('tr[data-demo]'), function (tr) { tr.remove(); });
+    var html = lista.map(function (r, i) {
+      var menor = r.aut && A.ehMenor(r.aut.a, r.aut.r);
+      return '<tr data-demo style="background: ' + (menor ? '#FFE8D6' : '#FFF8F0') + '">' +
+        '<td style="' + td + '">' + esc(r.hora) + '</td>' +
+        '<td style="' + td + '"><strong>' + esc(r.codigo) + '</strong>' + novo + '</td>' +
+        '<td style="' + td + '">' + status + '</td>' +
+        ['destino', 'data', 'tipo', 'nome', 'embarque', 'pagamento', 'total', 'sinal'].map(function (k) { return '<td style="' + td + '">' + esc(r[k]) + '</td>'; }).join('') +
+        celulaMenor(r, i) + '</tr>';
+    }).join('');
+    tb.insertAdjacentHTML('afterbegin', html);
+  }
+  render();
+
   var codigos = {}; lista.forEach(function (r) { codigos[r.codigo] = 1; });
-  var n = Object.keys(codigos).length;
+  var n = Object.keys(codigos).length, menores = lista.filter(function (r) { return r.aut; }).length;
   var av = document.getElementById('aviso-teste');
-  av.textContent = n === 1
+  av.textContent = (n === 1
     ? 'Sua reserva de teste chegou na planilha! Ela está no topo da tabela, marcada como NOVA.'
-    : 'Suas ' + n + ' reservas de teste chegaram na planilha! Elas estão no topo da tabela, marcadas como NOVA.';
+    : 'Suas ' + n + ' reservas de teste chegaram na planilha! Elas estão no topo da tabela, marcadas como NOVA.') +
+    (menores ? ' Menores de idade aparecem em laranja, com a autorização pronta.' : '');
   av.hidden = false;
   var bt = document.getElementById('limpar-teste');
   bt.hidden = false;
   bt.addEventListener('click', function () { try { localStorage.removeItem('boraDemoReservas'); } catch (e) {} location.reload(); });
+
+  // ----- editar: a autorização é refeita com os dados novos -----
+  var lbl = 'display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: #33445A';
+  var inp = 'font-family: inherit; font-size: 15px; padding: 9px 10px; border: 1.5px solid #C9D8E8; border-radius: 10px; min-height: 42px';
+  var dlg = document.createElement('dialog');
+  dlg.id = 'aut-editar';
+  dlg.style.cssText = 'border: none; border-radius: 18px; padding: 0; max-width: 560px; width: calc(100% - 32px); box-shadow: 0 24px 60px rgba(6,40,77,0.3)';
+  var vincOpts = Object.keys(A.VINCULOS).map(function (k) { return '<option value="' + k + '">' + esc(A.VINCULOS[k]) + '</option>'; }).join('');
+  var papelOpts = '<option value="">-</option>' + A.PAPEIS.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('');
+  dlg.innerHTML = '<form method="dialog" style="padding: 22px; display: flex; flex-direction: column; gap: 12px; font-family: inherit">' +
+    '<h3 style="margin: 0; font-family: Poppins, sans-serif; color: #0A4D8C">Editar dados do menor</h3>' +
+    '<p style="margin: 0; font-size: 14px; color: #55657A">Ao salvar, a autorização é refeita sozinha com os dados novos.</p>' +
+    '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">' +
+    '<label style="' + lbl + '">Nome do menor<input name="nome" style="' + inp + '"></label>' +
+    '<label style="' + lbl + '">Nascimento<input name="nasc" type="date" style="' + inp + '"></label>' +
+    '<label style="' + lbl + '">Data do passeio<input name="data" style="' + inp + '" placeholder="16/01"></label>' +
+    '<label style="' + lbl + '">Contratante é<select name="vinc" style="' + inp + '">' + vincOpts + '</select></label>' +
+    '<label style="' + lbl + '">Responsável que assina<input name="rNome" style="' + inp + '" placeholder="Só se não for o contratante"></label>' +
+    '<label style="' + lbl + '">É o(a)<select name="rVinc" style="' + inp + '">' + papelOpts + '</select></label>' +
+    '<label style="' + lbl + '">CPF do responsável<input name="rCpf" style="' + inp + '"></label>' +
+    '<label style="' + lbl + '">Telefone do responsável<input name="rTel" style="' + inp + '"></label>' +
+    '</div>' +
+    '<div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap">' +
+    '<button value="cancelar" style="' + btn + '">Cancelar</button>' +
+    '<button value="salvar" style="' + btn + '; background: #0A4D8C; color: #FFFFFF">Salvar e refazer autorização</button></div></form>';
+  document.body.appendChild(dlg);
+  var editando = -1;
+  var aviso = function (t) {
+    var el = document.getElementById('aut-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'aut-toast'; el.setAttribute('role', 'status'); el.style.cssText = 'font-family: inherit; position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0F1B2D; color: #FFFFFF; font-weight: 700; padding: 12px 18px; border-radius: 999px; z-index: 50'; document.body.appendChild(el); }
+    el.textContent = t; el.hidden = false; clearTimeout(el._t); el._t = setTimeout(function () { el.hidden = true; }, 3500);
+  };
+  dlg.addEventListener('close', function () {
+    if (dlg.returnValue !== 'salvar' || editando < 0) return;
+    var fm = dlg.querySelector('form'), r = lista[editando], a = r.aut.a;
+    a.nome = fm.nome.value; a.nasc = fm.nasc.value; a.vinc = fm.vinc.value;
+    a.rNome = fm.rNome.value; a.rVinc = fm.rVinc.value; a.rCpf = fm.rCpf.value; a.rTel = fm.rTel.value;
+    r.aut.r.v.data = fm.data.value || r.aut.r.v.data;
+    r.data = r.aut.r.v.data;
+    var id = A.idade(a.nasc, r.data, r.aut.r.ano);
+    r.nome = a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : '');
+    gravar(lista); render();
+    aviso(A.ehMenor(a, r.aut.r) ? 'Autorização refeita com os dados novos.' : 'Na nova data, não é mais menor: autorização dispensada.');
+  });
+  tb.addEventListener('click', function (e) {
+    var v = e.target.closest('[data-ver]'), ed = e.target.closest('[data-editar]');
+    if (v) { var r = lista[+v.getAttribute('data-ver')]; A.imprimir([[r.aut.r, r.aut.a]]); }
+    if (ed) {
+      editando = +ed.getAttribute('data-editar');
+      var x = lista[editando].aut, fm = dlg.querySelector('form');
+      fm.nome.value = x.a.nome || ''; fm.nasc.value = x.a.nasc || ''; fm.data.value = x.r.v.data || ''; fm.vinc.value = x.a.vinc || 'pai';
+      fm.rNome.value = x.a.rNome || ''; fm.rVinc.value = x.a.rVinc || ''; fm.rCpf.value = x.a.rCpf || ''; fm.rTel.value = x.a.rTel || '';
+      dlg.showModal();
+    }
+  });
+  tb.addEventListener('change', function (e) {
+    var c = e.target.closest('[data-entregue]'); if (!c) return;
+    lista[+c.getAttribute('data-entregue')].aut.entregue = c.checked; gravar(lista); render();
+    aviso(c.checked ? 'Autorização marcada como entregue.' : 'Autorização marcada como pendente.');
+  });
 })();
 // se uma reserva de teste for feita em outra aba, recarrega para mostrar
 window.addEventListener('storage', function (e) { if (e.key === 'boraDemoReservas') location.reload(); });

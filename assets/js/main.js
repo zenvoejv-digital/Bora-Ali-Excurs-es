@@ -337,61 +337,29 @@
 
   function blankAcomp() { return { nome: '', cpf: '', rg: '', nasc: '', dif: false, emb: '', tipo: '', vinc: '', rNome: '', rVinc: '', rCpf: '', rRg: '', rTel: '' }; }
 
-  // ---------- menor de idade: autorização do responsável ----------
-  var VINCULOS = { pai: 'Pai ou mãe do menor', resp: 'Responsável legal do menor (tutor ou guarda)', parente: 'Avô/avó, tio(a) ou irmão(ã) maior de idade', outro: 'Outra pessoa (amigo, vizinho, padrinho...)' };
+  // ---------- menor de idade: autorização do responsável (assets/js/autorizacao.js) ----------
+  var AUT = window.BoraAut;
+  var VINCULOS = AUT.VINCULOS;
   function ehMenor(a, v) { var id = idadeNaViagem(a.nasc, v); return id != null && id >= 0 && id < 18; }
-  function precisaResp(a) { return a.vinc === 'parente' || a.vinc === 'outro'; }
+  var precisaResp = AUT.precisaResp;
   function opcoesSel(mapa, sel) {
     return '<option value="">Selecione</option>' + Object.keys(mapa).map(function (k) {
       return '<option value="' + esc(k) + '"' + (k === sel ? ' selected' : '') + '>' + esc(mapa[k]) + '</option>';
     }).join('');
   }
-  var VINC_RESP = { 'Mãe': 'Mãe', 'Pai': 'Pai', 'Tutor(a) ou guardião(ã)': 'Tutor(a) ou guardião(ã)' };
-  function quemAssina(a, f) {
-    if (precisaResp(a)) return { nome: a.rNome.trim(), rg: a.rRg.trim(), cpf: a.rCpf, tel: a.rTel, papel: a.rVinc };
-    return { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, papel: a.vinc === 'resp' ? 'Tutor(a) ou guardião(ã)' : '' };
+  var VINC_RESP = {}; AUT.PAPEIS.forEach(function (p) { VINC_RESP[p] = p; });
+  function exigeFirma(a, v) { return AUT.exigeFirma(a, idadeNaViagem(a.nasc, v)); }
+  function textoAutorizacao(a, f, v) { return AUT.texto(a, f, idadeNaViagem(a.nasc, v)); }
+  function reservaAut(codigo, v, f) {
+    return { codigo: codigo, ano: CONFIG.anoAgenda, v: { destino: v.destino, data: v.data, dia: v.dia },
+      f: { nome: f.nome, rg: f.rg, cpf: f.cpf, tel: f.tel, embarque: f.embarque, cidade: f.cidade, saude: f.saude, emgNome: f.emgNome, emgTel: f.emgTel } };
   }
-  function exigeFirma(a, v) { var id = idadeNaViagem(a.nasc, v); return id < 16 && a.vinc === 'outro'; }
-  function textoAutorizacao(a, f, v) {
-    var q = quemAssina(a, f);
-    return 'assinada por ' + q.nome + (q.papel ? ' (' + q.papel.toLowerCase() + ')' : '') + (exigeFirma(a, v) ? ', com firma reconhecida' : '') + ', entregue no embarque';
-  }
-  function autorizacaoHTML(r, a) {
-    var v = r.v, f = r.f, q = quemAssina(a, f), id = idadeNaViagem(a.nasc, v), mesmo = !precisaResp(a);
-    var box = function (on) { return '<span class="ap-box">' + (on ? 'X' : '&nbsp;') + '</span>'; };
-    var linha = function (t) { return t ? '<strong>' + esc(t) + '</strong>' : '<span class="ap-blank"></span>'; };
-    var nota = exigeFirma(a, v)
-      ? '<strong>Firma reconhecida obrigatória.</strong> O(a) menor tem menos de 16 anos e viaja com quem não é parente próximo: reconheça a firma desta assinatura em cartório (Resolução CNJ nº 295/2019). Assinatura eletrônica (gov.br) não é aceita.'
-      : (id < 16 && a.vinc === 'parente'
-        ? 'O(a) menor viaja com parente: leve também um documento que comprove o parentesco (certidão de nascimento ou RG com filiação).'
-        : 'Leve esta autorização assinada e um documento com foto do(a) menor no dia do embarque.');
-    return '<section class="ap-doc">' +
-      '<header class="ap-head"><div><strong class="ap-brand">Bora Ali Excursões</strong><span>Salto/SP · Reserva ' + esc(r.codigo) + '</span></div><span>' + esc(v.destino) + ' · ' + esc(v.data) + '</span></header>' +
-      '<h1>Autorização de viagem para menor de idade</h1>' +
-      '<p>Eu, ' + linha(q.nome) + ', RG nº ' + linha(q.rg) + ', CPF nº ' + linha(q.cpf) + ', telefone ' + linha(q.tel) + ', na qualidade de ' +
-        box(q.papel === 'Mãe') + ' mãe ' + box(q.papel === 'Pai') + ' pai ' + box(q.papel === 'Tutor(a) ou guardião(ã)') + ' tutor(a) ou guardião(ã),</p>' +
-      '<p><strong>AUTORIZO</strong> o(a) menor ' + linha(a.nome.trim()) + ', nascido(a) em ' + linha(fmtDate(a.nasc)) + ' (' + id + (id === 1 ? ' ano' : ' anos') + ' na data do passeio), RG nº ' + linha(a.rg.trim()) + ', CPF nº ' + linha(a.cpf) +
-        ', a participar da excursão para <strong>' + esc(v.destino) + '</strong> no dia <strong>' + esc(v.data) + ' (' + esc(v.dia) + ')</strong>, organizada pela Bora Ali Excursões, com embarque e retorno em <strong>' + esc(a.dif && a.emb ? a.emb : f.embarque) + '</strong>.</p>' +
-      (mesmo
-        ? '<p>O(a) menor viajará acompanhado(a) por mim, responsável pela reserva, durante toda a excursão.</p>'
-        : '<p>O(a) menor viajará acompanhado(a) de ' + linha(f.nome) + ', RG nº ' + linha(f.rg) + ', CPF nº ' + linha(f.cpf) + ', telefone ' + linha(f.tel) + ', ' + (a.vinc === 'parente' ? 'parente maior de idade do(a) menor' : 'pessoa maior de idade de minha confiança') + ', que se responsabiliza por ele(a) durante toda a excursão.</p>') +
-      '<p>Saúde e necessidades informadas: ' + esc(f.saude || 'nenhuma') + '. Contato de emergência: ' + esc([f.emgNome, f.emgTel].filter(Boolean).join(' - ') || q.nome + ' - ' + q.tel) + '.</p>' +
-      '<p>Em caso de emergência, autorizo ' + (mesmo ? 'a Bora Ali Excursões' : 'o(a) acompanhante e a Bora Ali Excursões') + ' a levar o(a) menor para atendimento médico. Declaro que as informações acima são verdadeiras.</p>' +
-      '<p class="ap-local">' + esc(f.cidade || '______________') + ', ____ de ______________ de ________.</p>' +
-      '<div class="ap-sign"><div><span class="ap-line"></span>' + esc(q.nome) + '<br><small>Assinatura do(a) responsável legal</small></div><div class="ap-firma">Espaço para reconhecimento de firma</div></div>' +
-      '<p class="ap-note">' + nota + '</p>' +
-    '</section>';
-  }
-  var ultimaReserva = null;
+  var ultimaReserva = null, ultimosAcomps = [];
   function imprimirAutorizacoes(lista) {
-    if (!ultimaReserva || !lista.length) return;
-    $('aut-print').innerHTML = lista.map(function (a) { return autorizacaoHTML(ultimaReserva, a); }).join('');
-    document.body.classList.add('imprimindo');
-    var fim = function () { document.body.classList.remove('imprimindo'); window.removeEventListener('afterprint', fim); };
-    window.addEventListener('afterprint', fim);
-    window.print();
-    setTimeout(fim, 1500);
+    if (!ultimaReserva) return;
+    AUT.imprimir(lista.map(function (a) { return [ultimaReserva, a]; }));
   }
+
 
   function syncAcomps() {
     pax = acomps.length + 1;
@@ -690,7 +658,8 @@
         acompanhantes: acomps.map(function (a) {
           return { nome: a.nome.trim(), rg: a.rg.trim(), cpf: a.cpf, nascimento: fmtDate(a.nasc), idade: idade(a.nasc),
             valor: precoAcomp(v, a).valor,
-            autorizacao: ehMenor(a, v) ? 'Menor: autorização ' + textoAutorizacao(a, f, v) + (precisaResp(a) ? ' (resp. ' + a.rNome.trim() + ', ' + a.rVinc + ', CPF ' + a.rCpf + ', tel. ' + a.rTel + ')' : '') : '',
+            autorizacao: ehMenor(a, v) ? 'Menor: autorização ' + textoAutorizacao(a, f, v) : '',
+            menor: ehMenor(a, v) ? { vinculo: a.vinc, responsavel: precisaResp(a) ? { nome: a.rNome.trim(), papel: a.rVinc, cpf: a.rCpf, rg: a.rRg.trim(), telefone: a.rTel } : null } : null,
             embarque: a.dif ? a.emb.trim() : f.embarque };
         }),
         pagamento: { forma: nomes[pagamento], parcelas: pagamento === 'credito' ? parcelas : 1, total: total(), sinal: sinal },
@@ -712,8 +681,10 @@
           embarque: f.embarque, pagamento: pagamento === 'credito' ? 'Crédito ' + parcelas + 'x' : nomes[pagamento], total: brl(total()), sinal: brl(sinal) }];
         acomps.forEach(function (a) {
           var id = idade(a.nasc);
-          linhasDemo.push({ hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Acompanhante',
-            nome: a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : ''), embarque: a.dif ? a.emb.trim() : f.embarque, pagamento: '', total: '', sinal: '' });
+          var linhaA = { hora: hora, codigo: codigo, destino: v.destino, data: v.data, tipo: 'Acompanhante',
+            nome: a.nome.trim() + (id != null && id < 12 ? ' (' + id + ' anos)' : ''), embarque: a.dif ? a.emb.trim() : f.embarque, pagamento: '', total: '', sinal: '' };
+          if (ehMenor(a, v)) linhaA.aut = { r: reservaAut(codigo, v, f), a: Object.assign({}, a), entregue: false };
+          linhasDemo.push(linhaA);
         });
         var guardadas = JSON.parse(localStorage.getItem('boraDemoReservas') || '[]');
         localStorage.setItem('boraDemoReservas', JSON.stringify(linhasDemo.concat(guardadas).slice(0, 60)));
@@ -724,8 +695,9 @@
 
     // tela de reserva concluída
     $('bk-code').textContent = codigo; $('bk-code2').textContent = codigo;
-    ultimaReserva = { codigo: codigo, v: v, f: f, acomps: acomps.map(function (a) { return Object.assign({}, a); }) };
-    var menores = ultimaReserva.acomps.filter(function (a) { return ehMenor(a, v); });
+    ultimaReserva = reservaAut(codigo, v, f);
+    ultimosAcomps = acomps.map(function (a) { return Object.assign({}, a); });
+    var menores = ultimosAcomps.filter(function (a) { return ehMenor(a, v); });
     $('bk-aut').hidden = !menores.length;
     $('bk-aut-list').innerHTML = menores.map(function (a, n) {
       return '<button type="button" data-aut="' + n + '" class="btn" style="font-family: inherit; cursor: pointer; border: none; background: #F47B20; color: #06284D; font-weight: 800; font-size: 15px; padding: 12px 18px; border-radius: 999px; min-height: 48px">Imprimir autorização de ' + esc(a.nome.trim().split(/\s+/)[0]) + (exigeFirma(a, v) ? ' (firma reconhecida)' : '') + '</button>';
@@ -744,7 +716,7 @@
 
   $('bk-aut-list').addEventListener('click', function (e) {
     var b = e.target.closest('[data-aut]'); if (!b || !ultimaReserva) return;
-    var menores = ultimaReserva.acomps.filter(function (a) { return ehMenor(a, ultimaReserva.v); });
+    var menores = ultimosAcomps.filter(function (a) { return ehMenor(a, ultimaReserva.v); });
     var k = b.getAttribute('data-aut');
     imprimirAutorizacoes(k === 'todas' ? menores : [menores[+k]]);
   });

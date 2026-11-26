@@ -121,26 +121,3 @@ html,body{overflow-x:clip}
   .header-cta{padding:10px 14px !important;font-size:14px !important}
 }
 
-/* autorização de viagem para menor (impressão) */
-#aut-print{display:none}
-@media print{
-  @page{size:A4;margin:16mm}
-  body.imprimindo{background:#fff !important}
-  body.imprimindo > *:not(#aut-print){display:none !important}
-  body.imprimindo #aut-print{display:block !important;color:#111;font-family:Arial,Helvetica,sans-serif;font-size:12.5pt;line-height:1.55}
-}
-.ap-doc{page-break-after:always;break-after:page}
-.ap-doc:last-child{page-break-after:auto;break-after:auto}
-.ap-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0A4D8C;padding-bottom:8px;margin-bottom:14px;font-size:10.5pt;color:#333}
-.ap-head div{display:flex;flex-direction:column}
-.ap-brand{font-size:14pt;color:#0A4D8C}
-.ap-doc h1{font-size:15pt;text-align:center;text-transform:uppercase;letter-spacing:.5px;margin:6px 0 16px}
-.ap-doc p{margin:0 0 11px;text-align:justify}
-.ap-box{display:inline-block;width:14px;height:14px;border:1.2px solid #111;text-align:center;line-height:13px;font-size:10pt;font-weight:700;vertical-align:-2px}
-.ap-blank{display:inline-block;min-width:160px;border-bottom:1px solid #111}
-.ap-local{margin-top:22px !important}
-.ap-sign{display:flex;gap:20px;align-items:flex-end;margin-top:40px}
-.ap-sign > div:first-child{flex:1;text-align:center;font-size:11pt}
-.ap-line{display:block;border-top:1px solid #111;margin-bottom:4px}
-.ap-firma{width:200px;height:110px;border:1px dashed #777;color:#777;font-size:9pt;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
-.ap-note{margin-top:22px !important;border:1px solid #F47B20;background:#FFF8F1;padding:8px 10px;font-size:10.5pt}

@@ -58,7 +58,21 @@ A planilha guarda nome, RG, CPF, endereço e data de nascimento. Compartilhe só
 
 ## Menores de idade (autorização)
 
-- Quando um acompanhante tem menos de 18 anos na data do passeio, o site pede quem é o contratante para ele (pai/mãe, responsável legal, parente ou outra pessoa). Se não for pai, mãe ou responsável, pede os dados de quem vai assinar.
-- Depois da reserva, o site gera a **autorização preenchida para imprimir**. O responsável assina e entrega no embarque.
-- Menor de 16 anos viajando com quem não é parente próximo: a autorização precisa de **firma reconhecida em cartório** (Resolução CNJ nº 295/2019). Assinatura pelo gov.br não vale. O site avisa isso no documento.
-- A coluna **Autorização do menor** (AB) da aba Reservas mostra quem assina e se precisa de firma reconhecida. Confira no embarque.
+**No site:** quando um acompanhante tem menos de 18 anos na data do passeio, o site pede quem é o contratante para ele (pai/mãe, responsável legal, parente ou outra pessoa) e, se precisar, os dados de quem vai assinar. Depois da reserva, o cliente imprime a autorização pronta.
+
+**Na planilha (tudo automático):**
+- Ao chegar uma reserva com menor, a linha fica **laranja** e a planilha gera a **autorização em PDF** na pasta *Bora Ali - Autorizações de menores* do seu Google Drive. O link fica na coluna **AI**. O arquivo é privado: para mandar ao cliente, baixe e envie no WhatsApp.
+- A coluna **AB** resume quem assina e se precisa de firma reconhecida. Se faltar algum dado, ela diz o que falta (e o PDF só é gerado quando estiver completo).
+- As colunas **AC a AH** guardam quem é o contratante para o menor e os dados do responsável. Pode corrigir à vontade.
+- A coluna **AJ** é a caixinha **Autorização entregue**: marque no embarque.
+- A idade é calculada **na data do passeio** (ano em `ANO_VIAGENS`, no topo do código). Se mudar a data ou o nascimento e a pessoa fizer 18 anos antes da viagem, o destaque e a autorização somem sozinhos.
+
+**Para a autorização se refazer sozinha quando alguém editar a reserva** (nome, nascimento, data, responsável, embarque...): menu **Bora Ali › Menores de idade › Refazer autorizações sozinho ao editar** (uma vez só; o Google pede autorização para o Drive). O PDF antigo vai para a lixeira e o novo entra no lugar, com o link atualizado.
+
+Outros itens do menu *Menores de idade*:
+- **Gerar/atualizar autorização (linhas selecionadas)**: refaz na hora as autorizações da reserva selecionada.
+- **Conferir menores em todas as reservas**: destaca e gera o que faltar (útil depois de importar reservas antigas).
+
+**Lista de embarque:** ganhou a coluna **Menor / autorização**. Menores com autorização entregue ficam verdes; os pendentes ficam laranja com "CONFERIR AUTORIZAÇÃO".
+
+**Regra legal:** menor de 16 anos viajando com quem não é parente próximo precisa de autorização com **firma reconhecida em cartório** (Resolução CNJ nº 295/2019). Assinatura pelo gov.br não vale. O documento avisa quando é o caso.
