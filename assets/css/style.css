@@ -260,10 +260,7 @@ html,body{overflow-x:clip}
 #inicio > .hero-bg{max-width:none !important;border-radius:0 !important;padding-left:max(clamp(24px,5vw,72px),calc((100% - 1280px) / 2 + 72px)) !important;padding-right:max(clamp(24px,5vw,72px),calc((100% - 1280px) / 2 + 72px)) !important}
 #inicio > .hero-bg > .hero-art{right:max(clamp(16px,3vw,48px),calc((100% - 1280px) / 2 + 48px))}
 @media (max-width:860px){#inicio > .hero-bg > .hero-art{right:50%}}
-/* topo largo: título e logo maiores, ocupando o espaço extra */
-#inicio > .hero-bg{min-height:620px !important;padding-left:max(clamp(24px,5vw,72px),calc((100% - 1440px) / 2 + 72px)) !important;padding-right:max(clamp(24px,5vw,72px),calc((100% - 1440px) / 2 + 72px)) !important;gap:26px !important}
-#inicio > .hero-bg > .hero-art{width:clamp(300px,38vw,540px) !important;right:max(clamp(16px,3vw,48px),calc((100% - 1440px) / 2 + 48px)) !important}
-#inicio h1{font-size:clamp(40px,5.4vw,78px) !important;max-width:860px !important;letter-spacing:-1.5px !important}
-#inicio h1 + p{font-size:clamp(17px,1.45vw,21px) !important;max-width:620px !important}
-#inicio .btn{font-size:clamp(16px,1.25vw,18px)}
-@media (max-width:860px){#inicio > .hero-bg{min-height:560px !important}#inicio > .hero-bg > .hero-art{width:min(125%,560px) !important;right:50% !important}}
+/* topo largo: título e logo no tamanho original, levados para as pontas */
+#inicio > .hero-bg{padding-left:clamp(24px,4vw,64px) !important;padding-right:clamp(24px,4vw,64px) !important}
+#inicio > .hero-bg > .hero-art{right:clamp(16px,2.5vw,48px) !important}
+@media (max-width:860px){#inicio > .hero-bg > .hero-art{right:50% !important}}
