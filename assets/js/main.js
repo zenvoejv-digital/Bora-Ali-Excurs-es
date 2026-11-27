@@ -436,6 +436,7 @@
           '</div>' +
         '</div>' +
         '<span id="' + id + 'preco" aria-live="polite" style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #EEF5FC; color: #0A4D8C"></span>' +
+        '<span id="' + id + 'niver" hidden style="align-self: flex-start; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: #FFF1E6; color: #7A3608; border: 1.5px dashed #F47B20"></span>' +
         '<label for="' + id + 'dif" style="display: flex; gap: 10px; align-items: center; font-size: 15px; color: #33445A; cursor: pointer; min-height: 44px">' +
         '<input id="' + id + 'dif" data-a="' + i + '" data-k="dif" type="checkbox"' + (a.dif ? ' checked' : '') + ' style="width: 22px; height: 22px; margin: 0; flex: none; accent-color: #0A4D8C"><span>Vai embarcar em outro local</span></label>' +
         '<div id="' + id + 'emb-wrap"' + (a.dif ? '' : ' hidden') + '>' + F + '<label class="f-label" for="' + id + 'emb">Ponto de embarque *</label><select id="' + id + 'emb" data-a="' + i + '" data-k="emb" class="f-input">' + opcoesEmbarque(a.emb) + '</select></div></div>' +
@@ -443,8 +444,23 @@
     }).join('');
   }
 
+  // ---------- aniversariante do mês do passeio: desconto com condições no WhatsApp ----------
+  var NIVER = CONFIG.descontoAniversario || {};
+  function niverNoMes(iso, v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return !!(NIVER.ativo && m && v && +m[2] === dataDaViagem(v).getMonth() + 1);
+  }
+  function niverTexto(nome) { return '🎂 ' + (nome ? nome + ' faz' : 'Você faz') + ' aniversário no mês do passeio: tem desconto especial! As condições são confirmadas pelo WhatsApp.'; }
+  function syncNiver() {
+    var on = !!viagemAtual && niverNoMes($('bk-nasc').value, viagemAtual);
+    $('bk-niver').hidden = !on;
+    if (on) $('bk-niver').textContent = niverTexto('');
+  }
+  ['input', 'change'].forEach(function (ev) { $('bk-nasc').addEventListener(ev, syncNiver); });
   function precoChips() {
     acomps.forEach(function (a, i) {
+      var nv = $('bk-a' + (i + 1) + '-niver');
+      if (nv) { var onN = niverNoMes(a.nasc, viagemAtual); nv.hidden = !onN; if (onN) nv.textContent = niverTexto(a.nome.trim().split(/\s+/)[0] || 'Acompanhante'); }
       var mn = $('bk-a' + (i + 1) + '-menor'); if (mn) mn.hidden = !ehMenor(a, viagemAtual);
       var el = $('bk-a' + (i + 1) + '-preco'); if (!el) return;
       var p = precoAcomp(viagemAtual, a);
@@ -485,6 +501,7 @@
     $('bk-trip-price').textContent = brl(v.valor);
     $('bk-kids').textContent = regraCriancas(v) + (v.soTransporte ? ' ' + v.soTransporte.aviso : '');
     syncContratanteMenor();
+    syncNiver();
     $('bk-tipo-wrap').hidden = !v.soTransporte;
     $('bk-tipo').innerHTML = opcoesTipo(v, '');
     updateSummary();
@@ -700,6 +717,10 @@
         lines.push('Autorização: ' + textoAutorizacao(a, f, v));
       }
     });
+    var niver = [];
+    if (niverNoMes(f.nasc, v)) niver.push(f.nome + ' (' + AUT.dataBr(f.nasc).slice(0, 5) + ')');
+    acomps.forEach(function (a) { if (niverNoMes(a.nasc, v)) niver.push(a.nome.trim() + ' (' + AUT.dataBr(a.nasc).slice(0, 5) + ')'); });
+    if (niver.length) lines.push('', '*🎂 ANIVERSARIANTE DO MÊS:* ' + niver.join(', '), 'Quero saber as condições do desconto de aniversário.');
     if (f.saude) lines.push('', '*Necessidades / saúde:* ' + f.saude);
     lines.push('', '*PAGAMENTO*',
       'Forma: ' + pagTxt,

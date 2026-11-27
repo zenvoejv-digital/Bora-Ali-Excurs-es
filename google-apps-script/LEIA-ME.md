@@ -102,3 +102,14 @@ Mudar o status na linha do **contratante** vale para a reserva inteira (por exem
 **Prazo vencido:** se o prazo passar sem pagamento, a reserva vira **Prazo vencido** e **a vaga volta para o site** (para não liberar sozinho, mude `LIBERAR_VAGA_AO_VENCER` para `false`). Se o cliente pagar depois, a planilha marca o pagamento e deixa um aviso nas Observações para conferir se ainda há vaga. Para conferir na hora: **Bora Ali › Pagamentos do sinal › Conferir pagamentos e prazos agora**.
 
 Outro banco ou maquininha (InfinitePay, PagBank, Asaas...) também pode ser ligado se tiver API de link de pagamento. Sem integração, tudo funciona com o prazo, o contador e a confirmação manual pelo comprovante.
+
+## Aniversariantes do mês (desconto)
+
+Quem faz aniversário no mês tem **desconto especial**, com as condições combinadas no WhatsApp.
+
+- **No site:** se algum passageiro faz aniversário no **mês do passeio**, a reserva mostra o aviso "🎂 tem desconto especial, condições confirmadas pelo WhatsApp" e a mensagem para a agência sai com a linha **ANIVERSARIANTE DO MÊS** (o valor do site não muda: o desconto é combinado no WhatsApp). Para desligar: `descontoAniversario.ativo: false` em `assets/js/data.js`.
+- **Nas reservas:** a coluna **AQ (Aniversariante do mês)** marca o passageiro, para a equipe conferir o desconto.
+- **Aba "Aniversariantes":** menu **Bora Ali › Aniversariantes do mês (desconto)** (pergunta o mês; vazio = mês atual). Usa as datas de nascimento de todas as reservas e lista nome, CPF, aniversário, idade, telefone, viagens e último destino, com o link **Enviar parabéns + desconto** no WhatsApp (já sugerindo viagens da agenda daquele mês). Só aparece o link para quem tem o próprio telefone e **aceitou receber novidades** (LGPD); acompanhantes ficam como "Falar com o contratante".
+- Marque **Desconto usado** e anote as **Condições combinadas**: isso é guardado quando a aba é atualizada.
+- Com **Atualizar o painel sozinho todo dia** ligado, a aba de aniversariantes também se atualiza sozinha.
+- Para citar um valor na mensagem (ex.: "10% de desconto"), escreva em `DESCONTO_ANIVERSARIO` no topo do código.

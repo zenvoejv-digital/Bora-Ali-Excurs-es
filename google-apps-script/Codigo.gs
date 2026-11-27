@@ -11,6 +11,10 @@ var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Prazo vencido', 'Cancel
 // SINAL: o prazo do sinal é o prazo do link de pagamento. Passou do prazo sem pagar, a reserva vira "Prazo vencido" e a vaga volta para o site.
 var PRAZO_SINAL_HORAS = 24;
 var LIBERAR_VAGA_AO_VENCER = true;
+// ANIVERSARIANTE DO MÊS: desconto com condições combinadas no WhatsApp.
+// Se quiser citar um valor na mensagem, escreva aqui (ex.: '10% de desconto'); vazio = "um desconto especial".
+var DESCONTO_ANIVERSARIO = '';
+var ABA_ANIVERSARIANTES = 'Aniversariantes';
 // O Access Token do Mercado Pago NÃO fica aqui: use o menu Bora Ali › Pagamentos › Ligar Mercado Pago (fica guardado em segredo no projeto).
 // Risco de perda do cliente: dias desde a última reserva
 var DIAS_ATIVO = 90;       // até 90 dias: Ativo
@@ -32,7 +36,8 @@ var CAB_RESERVAS = ['Recebido em', 'Código', 'Status', 'ID viagem', 'Destino', 
   'Aceita novidades', 'Valor do passageiro', 'Autorização do menor',
   'Contratante é (menor)', 'Responsável (nome)', 'Responsável é', 'Responsável (CPF)', 'Responsável (RG)', 'Responsável (telefone)',
   'Link da autorização', 'Autorização entregue', 'Responsável (nascimento)', 'Responsável (e-mail)',
-  'Prazo do sinal', 'Link de pagamento', 'Sinal pago em', 'Confirmação ao cliente'];
+  'Prazo do sinal', 'Link de pagamento', 'Sinal pago em', 'Confirmação ao cliente', 'Aniversariante do mês'];
+var COL_NIVER = 43;
 var COL_PRAZO = 39, COL_LINKPAG = 40, COL_PAGOEM = 41, COL_CONFIRMA = 42;
 var SEM_VAGA = ['Cancelada', 'Prazo vencido'];   // status que não ocupam lugar no ônibus
 // colunas (1 = A) usadas pelas autorizações
@@ -52,6 +57,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Atualizar painel de clientes', 'atualizarClientes')
     .addItem('Ficha do cliente (histórico completo)', 'fichaCliente')
+    .addItem('Aniversariantes do mês (desconto)', 'atualizarAniversariantes')
     .addItem('Atualizar o painel sozinho todo dia', 'ativarAtualizacaoDiaria')
     .addSeparator()
     .addItem('Gerar lista de embarque', 'gerarListaEmbarque')
@@ -114,7 +120,7 @@ function criarAbaBusca_() {
   var col = 'Reservas!';
   var txt = 'TRIM(B2)', dig = 'REGEXREPLACE(B2&"","\\D","")';
   b.getRange('A5').setFormula(
-    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AP,' +
+    '=IF(' + txt + '="","",IFERROR(FILTER(' + col + 'A2:AQ,' +
     '(ISNUMBER(SEARCH(' + txt + ',' + col + 'B2:B&" "&' + col + 'H2:H&" "&' + col + 'J2:J&" "&' + col + 'M2:M)))+' +
     '((LEN(' + dig + ')>=4)*ISNUMBER(SEARCH(' + dig + ',REGEXREPLACE(' + col + 'J2:J&" "&' + col + 'M2:M,"\\D",""))))),' +
     '"Nada encontrado. Confira o código ou tente parte do nome."))');
@@ -168,7 +174,7 @@ function buscarReserva() {
   html += '<div style="color:#555">As linhas encontradas ficaram selecionadas na aba Reservas.</div></div>';
   var ss = SpreadsheetApp.getActive();
   ss.setActiveSheet(r);
-  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AP' + a.linha; })).activate();
+  r.getRangeList(achadas.map(function (a) { return 'A' + a.linha + ':AQ' + a.linha; })).activate();
   ui.showModalDialog(HtmlService.createHtmlOutput(html).setWidth(520).setHeight(Math.min(560, 140 + achadas.length * 60)),
     achadas.length + ' linha(s) encontrada(s)');
 }
@@ -202,10 +208,10 @@ function doPost(e) {
     var linhas = [];
     linhas.push(base.concat(['Contratante', c.nome, c.rg, c.cpf, c.nascimento, c.idade, c.telefone, c.email, c.endereco,
       c.embarque, c.emergenciaNome, c.emergenciaTelefone, d.saude, p.forma, p.parcelas, p.total, p.sinal, d.observacoes, d.atendente, novidades, c.valor, c.autorizacao || ''
-      ].concat(colunasMenor_(c.menor), [prazo, '', ''])));
+      ].concat(colunasMenor_(c.menor), [prazo, '', '', '', niverTxt_(c.nascimento, v.data)])));
     (d.acompanhantes || []).slice(0, 20).forEach(function (a) {
       linhas.push(base.concat(['Acompanhante de ' + c.nome, a.nome, a.rg, a.cpf, a.nascimento, a.idade, c.telefone, '', '',
-        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor), ['', '', ''])));
+        a.embarque, c.emergenciaNome, c.emergenciaTelefone, '', '', '', '', '', '', d.atendente, novidades, a.valor, a.autorizacao || ''].concat(colunasMenor_(a.menor), ['', '', '', '', niverTxt_(a.nascimento, v.data)])));
     });
     linhas = linhas.map(function (l) { return l.map(limpa_); });
     var linhaContratante = sh.getLastRow() + 1;
@@ -495,9 +501,9 @@ function fichaCliente() {
 function ativarAtualizacaoDiaria() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'atualizarClientesDiario') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('atualizarClientesDiario').timeBased().everyDays(1).atHour(6).create();
-  SpreadsheetApp.getUi().alert('Pronto! O painel de clientes vai se atualizar sozinho todo dia, por volta das 6h.');
+  SpreadsheetApp.getUi().alert('Pronto! O painel de clientes e a aba de aniversariantes do mês vão se atualizar sozinhos todo dia, por volta das 6h.');
 }
-function atualizarClientesDiario() { atualizarClientes(true); }
+function atualizarClientesDiario() { atualizarClientes(true); try { atualizarAniversariantes(true); } catch (e) { /* segue */ } }
 
 function lerAgenda_() {
   var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA);
@@ -1055,4 +1061,83 @@ function confirmarReserva_(sh, codigo, status) {
     '\nO horário de embarque chega por aqui antes da viagem. Qualquer dúvida, é só chamar!';
   var url = 'https://wa.me/' + tel + '?text=' + encodeURIComponent(texto);
   sh.getRange(linhaC, COL_CONFIRMA).setRichTextValue(SpreadsheetApp.newRichTextValue().setText('Enviar confirmação no WhatsApp').setLinkUrl(url).build());
+}
+
+// ======================================================================
+// ANIVERSARIANTES DO MÊS: desconto especial, condições combinadas no WhatsApp
+// ======================================================================
+// "02/02/1985" + data da viagem "24/01" -> texto da coluna "Aniversariante do mês" da reserva
+function niverTxt_(nasc, dataViagem) {
+  var n = /^(\d{1,2})\/(\d{1,2})\//.exec(String(nasc || '')), d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(String(dataViagem || ''));
+  if (!n || !d || +n[2] !== +d[2]) return '';
+  return 'Sim (' + ('0' + n[1]).slice(-2) + '/' + ('0' + n[2]).slice(-2) + '): conferir desconto no WhatsApp';
+}
+
+// Monta a aba "Aniversariantes" com quem faz aniversário no mês (a partir dos cadastros das reservas)
+function atualizarAniversariantes(silencioso) {
+  var ss = SpreadsheetApp.getActive(), res = ss.getSheetByName(ABA_RESERVAS);
+  if (!res || res.getLastRow() < 2) { if (silencioso !== true) SpreadsheetApp.getUi().alert('Ainda não há reservas.'); return; }
+  var hoje = new Date(), mes = hoje.getMonth() + 1, ano = hoje.getFullYear();
+  if (silencioso !== true) {
+    var ui = SpreadsheetApp.getUi();
+    var r = ui.prompt('Aniversariantes do mês', 'Qual mês? (1 a 12, vazio = mês atual: ' + mes + ')', ui.ButtonSet.OK_CANCEL);
+    if (r.getSelectedButton() !== ui.Button.OK) return;
+    var m = parseInt(r.getResponseText(), 10);
+    if (m >= 1 && m <= 12) { if (m < mes) ano++; mes = m; }
+  }
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  var txt = res.getRange(2, 1, res.getLastRow() - 1, CAB_RESERVAS.length).getDisplayValues();
+  var contrat = {};
+  txt.forEach(function (l) { if (/^Contratante/.test(l[6])) contrat[l[1]] = { nome: l[7], tel: l[12], novidades: l[25] }; });
+  // uma linha por pessoa (CPF), com a reserva mais recente
+  var pessoas = {};
+  txt.forEach(function (l) {
+    var n = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(l[10]).trim());
+    if (!n || +n[2] !== mes) return;
+    var chave = String(l[9]).replace(/\D/g, '') || 'nome:' + String(l[7]).toLowerCase();
+    var p = pessoas[chave] || (pessoas[chave] = { nome: l[7], cpf: l[9], dia: +n[1], anoNasc: +n[3], viagens: 0, ultimo: '', tel: '', contato: '', novidades: '' });
+    if (l[2] !== 'Cancelada' && l[2] !== 'Prazo vencido') { p.viagens++; p.ultimo = l[4]; }
+    if (/^Contratante/.test(l[6])) { p.tel = l[12]; p.contato = 'próprio'; p.novidades = l[25]; p.email = l[13]; }
+    else if (!p.tel) { var d = contrat[l[1]] || {}; p.tel = d.tel || ''; p.contato = 'via ' + (d.nome || 'contratante'); p.novidades = d.novidades || ''; }
+  });
+  // viagens da agenda no mês do aniversário (para sugerir na mensagem)
+  var noMes = lerAgenda_().filter(function (v) { var d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(v.data); return d && +d[2] === mes; });
+  // guarda o que o gestor já marcou ("Desconto usado") e as anotações, para não perder ao atualizar
+  var sh = ss.getSheetByName(ABA_ANIVERSARIANTES), antes = {};
+  if (sh && sh.getLastRow() > 4) sh.getRange(5, 1, sh.getLastRow() - 4, 11).getValues().forEach(function (l) { antes[String(l[1]).replace(/\D/g, '') + '|' + l[10]] = { usado: l[8], obs: l[9] }; });
+  var ref = ano + '-' + ('0' + mes).slice(-2);
+  var desconto = DESCONTO_ANIVERSARIO || 'um desconto especial';
+  var saida = Object.keys(pessoas).map(function (k) {
+    var p = pessoas[k], primeiro = String(p.nome).split(' ')[0], tel = String(p.tel).replace(/\D/g, '');
+    var sug = noMes.slice(0, 3).map(function (v) { return v.destino + ' (' + v.data + ')'; });
+    var msg = 'Feliz aniversário, ' + primeiro + '! 🎂🎉 Aqui é da ' + NOME_AGENCIA + '.\n\nNo mês do seu aniversário você tem *' + desconto + '* nas nossas excursões!' +
+      (sug.length ? ' Que tal comemorar viajando? Em ' + MESES[mes - 1] + ' tem ' + sug.join(', ') + '.' : '') +
+      '\n\nResponda esta mensagem que a gente te passa as condições. 💙🧡';
+    var podeEnviar = p.contato === 'próprio' && p.novidades === 'Sim' && tel.length >= 10;
+    var acao = podeEnviar ? SpreadsheetApp.newRichTextValue().setText('Enviar parabéns + desconto').setLinkUrl('https://wa.me/55' + tel + '?text=' + encodeURIComponent(msg)).build()
+      : SpreadsheetApp.newRichTextValue().setText(p.contato !== 'próprio' ? 'Falar com o contratante (' + p.contato.replace('via ', '') + ')' : 'Sem autorização para novidades').build();
+    var a = antes[String(p.cpf).replace(/\D/g, '') + '|' + ref] || {};
+    return { dia: p.dia, linha: [p.nome, p.cpf, ('0' + p.dia).slice(-2) + '/' + ('0' + mes).slice(-2), ano - p.anoNasc,
+      p.tel + (p.contato && p.contato !== 'próprio' ? ' (' + p.contato + ')' : ''), p.viagens, p.ultimo || '—', p.novidades || 'Não informado',
+      a.usado === true, a.obs || '', ref], acao: acao };
+  }).sort(function (x, y) { return x.dia - y.dia; });
+
+  sh = sh || ss.insertSheet(ABA_ANIVERSARIANTES, 2);
+  sh.clear();
+  var cab = ['Nome completo', 'CPF', 'Aniversário', 'Faz (anos)', 'Telefone', 'Viagens', 'Último destino', 'Aceita novidades', 'Desconto usado', 'Condições combinadas', 'Mês', 'Ação'];
+  sh.getRange('A1').setValue('Aniversariantes de ' + MESES[mes - 1] + ' 🎂').setFontSize(16).setFontWeight('bold').setFontColor('#0A4D8C');
+  sh.getRange('A2').setValue(saida.length + ' aniversariante(s). Desconto de aniversário com condições combinadas no WhatsApp. Marque "Desconto usado" quando o cliente aproveitar.' +
+    (DESCONTO_ANIVERSARIO ? ' Desconto: ' + DESCONTO_ANIVERSARIO + '.' : '')).setFontColor('#33445A');
+  sh.getRange(4, 1, 1, cab.length).setValues([cab]).setFontWeight('bold').setBackground('#F47B20').setFontColor('#06284D');
+  if (saida.length) {
+    sh.getRange(5, 1, saida.length, 11).setValues(saida.map(function (x) { return x.linha.map(function (v, j) { return j === 8 ? v : limpa_(v); }); }));
+    sh.getRange(5, 9, saida.length, 1).insertCheckboxes();
+    sh.getRange(5, 9, saida.length, 1).setValues(saida.map(function (x) { return [x.linha[8]]; }));
+    sh.getRange(5, 12, saida.length, 1).setRichTextValues(saida.map(function (x) { return [x.acao]; }));
+    var dia = hoje.getDate(), mesHoje = hoje.getMonth() + 1;
+    saida.forEach(function (x, i) { if (mesHoje === mes && x.dia === dia) sh.getRange(5 + i, 1, 1, cab.length).setBackground('#FFE8D6'); });
+  }
+  sh.hideColumns(11);
+  sh.setFrozenRows(4); sh.setColumnWidths(1, cab.length, 130); sh.setColumnWidth(1, 220); sh.setColumnWidth(10, 220); sh.setColumnWidth(12, 230);
+  if (silencioso !== true) { ss.setActiveSheet(sh); ss.toast(saida.length + ' aniversariante(s) em ' + MESES[mes - 1] + '.', 'Bora Ali', 5); }
 }

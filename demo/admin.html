@@ -58,7 +58,7 @@ tr:hover td{background:#F7FAFE}
 <span class="tag">DEMONSTRAÇÃO · DADOS FICTÍCIOS</span>
 <div style="display:flex;flex-direction:column;gap:8px">
 <h1>Painel de clientes</h1>
-<p class="muted" style="max-width:900px">Área dos gestores: cada cliente com o histórico de viagens, CPF, e-mail e contato, o risco de deixar de viajar com a agência e a próxima viagem recomendada para o perfil dele. Na versão real, este painel é a aba <strong>Clientes</strong> da planilha Google, protegida pelo login da agência.</p>
+<p class="muted" style="max-width:900px">Área dos gestores: cada cliente com o histórico de viagens, CPF, e-mail e contato, o risco de deixar de viajar com a agência, a próxima viagem recomendada para o perfil dele e os <strong>aniversariantes do mês</strong>, que têm desconto especial combinado pelo WhatsApp. Na versão real, este painel é a aba <strong>Clientes</strong> da planilha Google, protegida pelo login da agência.</p>
 </div>
 
 <div class="kpis" id="kpis" role="group" aria-label="Filtrar por risco"></div>
@@ -91,6 +91,13 @@ tr:hover td{background:#F7FAFE}
 <div class="ficha-corpo">
 <div class="dados" id="f-dados"></div>
 <div id="f-perfil"></div>
+<div class="card" id="f-niver" hidden style="background:#FFF1E6;border-color:#F47B20;border-style:dashed">
+<h2 style="color:#7A3608">🎂 Aniversariante do mês</h2>
+<p class="muted" id="f-niver-txt" style="color:#33445A"></p>
+<label for="f-niver-msg" class="small" style="font-weight:700">Mensagem de parabéns (dá para editar antes de enviar)</label>
+<textarea id="f-niver-msg" class="msg"></textarea>
+<div id="f-niver-acao" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"></div>
+</div>
 <div class="card" style="background:#FFF8F0;border-color:#FFD2AE">
 <h2 style="color:#7A3608">Viagem recomendada</h2>
 <p class="muted" id="f-rec" style="color:#33445A"></p>
@@ -122,29 +129,50 @@ var CLIENTES = [{"nome": "Gabriela Exemplo", "cpf": "000.000.000-07", "email": "
     var abre = (c.risco === 'Ativo' || c.risco === 'Novo') ? 'Oi, ' + p + '! Tudo bem? 🧡' : 'Oi, ' + p + '! Que saudade de você nas nossas viagens! 🧡';
     return abre + ' Como você curtiu ' + c.ultimo + ', separamos uma que é a sua cara: *' + c.rec.destino + '* em ' + c.rec.data + ', por ' + brl(c.rec.valor) + ' por pessoa. Quer que eu reserve sua vaga? — Bora Ali Excursões';
   }
+  // ANIVERSARIANTES: nascimento de cada cliente (na demonstração, alguns fazem aniversário neste mês)
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  var hoje = new Date(), MES = hoje.getMonth() + 1;
+  var NASC = ['14/03/1988', '22/07/1979', '05/10/1992', '30/01/1985', '18/05/1990', '09/12/1975', '03/08/1996', '27/04/1983'];
+  var NIVER_AGORA = [0, 3, 5];
+  CLIENTES.forEach(function (c, i) {
+    var n = NASC[i % NASC.length].split('/');
+    if (NIVER_AGORA.indexOf(i) >= 0) { n[1] = ('0' + MES).slice(-2); n[0] = ('0' + Math.min(28, [hoje.getDate(), 12, 26][NIVER_AGORA.indexOf(i)])).slice(-2); }
+    c.nasc = n.join('/'); c.niver = +n[1] === MES; c.diaNiver = +n[0];
+  });
+  function usadoNiver(c, v) {
+    var k = 'boraNiverUsado-' + hoje.getFullYear() + '-' + MES + '-' + c.cpf;
+    try { if (v === undefined) return localStorage.getItem(k) === '1'; if (v) localStorage.setItem(k, '1'); else localStorage.removeItem(k); } catch (e) {}
+    return !!v;
+  }
+  function mensagemNiver(c) {
+    return 'Feliz aniversário, ' + c.nome.split(' ')[0] + '! 🎂🎉 Aqui é da Bora Ali Excursões.\n\nNo mês do seu aniversário você tem *um desconto especial* nas nossas excursões! Que tal comemorar em *' + c.rec.destino + '* (' + c.rec.data + ')?\n\nResponda esta mensagem que a gente te passa as condições. 💙🧡';
+  }
   CLIENTES.sort(function (a, b) { return (ORDEM.indexOf(a.risco) - ORDEM.indexOf(b.risco)) || (b.gasto - a.gasto); });
 
   function kpis() {
     var cont = { 'Todos': CLIENTES.length };
     CLIENTES.forEach(function (c) { cont[c.risco] = (cont[c.risco] || 0) + 1; });
-    $('kpis').innerHTML = ['Todos', 'Ativo', 'Novo', 'Atenção', 'Em risco', 'Perdido'].map(function (k) {
-      var cor = k === 'Todos' ? ['#FFFFFF', '#0A4D8C'] : CORES[k];
-      var rot = { 'Todos': 'Todos os clientes', 'Ativo': 'Ativos', 'Novo': 'Novos', 'Atenção': 'Atenção', 'Em risco': 'Em risco', 'Perdido': 'Perdidos' }[k];
+    cont['Aniversariantes'] = CLIENTES.filter(function (c) { return c.niver; }).length;
+    $('kpis').innerHTML = ['Todos', 'Ativo', 'Novo', 'Atenção', 'Em risco', 'Perdido', 'Aniversariantes'].map(function (k) {
+      var cor = k === 'Todos' ? ['#FFFFFF', '#0A4D8C'] : k === 'Aniversariantes' ? ['#FFF1E6', '#7A3608'] : CORES[k];
+      var rot = { 'Todos': 'Todos os clientes', 'Ativo': 'Ativos', 'Novo': 'Novos', 'Atenção': 'Atenção', 'Em risco': 'Em risco', 'Perdido': 'Perdidos', 'Aniversariantes': '🎂 Aniversariantes de ' + MESES[MES - 1] }[k];
       return '<button type="button" class="kpi" data-filtro="' + k + '" aria-pressed="' + (filtro === k) + '" style="background:' + cor[0] + '"><b style="color:' + cor[1] + '">' + (cont[k] || 0) + '</b><span style="color:' + cor[1] + '">' + rot + '</span></button>';
     }).join('');
   }
   function lista() {
     var t = norm($('busca').value.trim()), dg = $('busca').value.replace(/\D/g, '');
     var vis = CLIENTES.filter(function (c) {
-      if (filtro !== 'Todos' && c.risco !== filtro) return false;
+      if (filtro === 'Aniversariantes') { if (!c.niver) return false; }
+      else if (filtro !== 'Todos' && c.risco !== filtro) return false;
       if (!t) return true;
       return norm([c.nome, c.email, c.cidade, c.cpf].join(' ')).indexOf(t) >= 0 || (dg.length >= 3 && c.cpf.replace(/\D/g, '').indexOf(dg) >= 0);
     });
-    $('titulo-lista').textContent = (filtro === 'Todos' ? 'Todos os clientes' : 'Clientes: ' + filtro) + ' (' + vis.length + ')';
+    if (filtro === 'Aniversariantes') vis.sort(function (a, b) { return a.diaNiver - b.diaNiver; });
+    $('titulo-lista').textContent = (filtro === 'Todos' ? 'Todos os clientes' : filtro === 'Aniversariantes' ? 'Aniversariantes de ' + MESES[MES - 1] + ' (desconto com condições no WhatsApp)' : 'Clientes: ' + filtro) + ' (' + vis.length + ')';
     $('lista').innerHTML = vis.length ? vis.map(function (c) {
       var i = CLIENTES.indexOf(c);
       return '<tr>' +
-        '<td><strong>' + esc(c.nome) + '</strong><div class="small">' + esc(c.email) + '</div><div class="small">' + esc(c.cidade) + '</div></td>' +
+        '<td><strong>' + esc(c.nome) + '</strong>' + (c.niver ? ' <span class="chip" style="background:#FFF1E6;color:#7A3608;border:1.5px dashed #F47B20">🎂 ' + esc(c.nasc.slice(0, 5)) + (usadoNiver(c) ? ' · desconto usado' : '') + '</span>' : '') + '<div class="small">' + esc(c.email) + '</div><div class="small">' + esc(c.cidade) + '</div></td>' +
         '<td style="white-space:nowrap">' + esc(c.cpf) + '</td>' +
         '<td style="white-space:nowrap">' + esc(c.tel) + '</td>' +
         '<td>' + c.hist.filter(function (h) { return h[5] !== 'Cancelada'; }).length + (c.canceladas ? '<div class="small">' + c.canceladas + ' cancelada</div>' : '') + '</td>' +
@@ -162,11 +190,22 @@ var CLIENTES = [{"nome": "Gabriela Exemplo", "cpf": "000.000.000-07", "email": "
     $('f-nome').textContent = c.nome;
     $('f-risco').innerHTML = badge(c.risco) + ' <span style="color:#DCE9F7;font-size:14px">· última reserva há ' + c.dias + ' dias</span>';
     var feitas = c.hist.filter(function (h) { return h[5] !== 'Cancelada'; }).length;
-    $('f-dados').innerHTML = [['CPF', c.cpf], ['E-mail', c.email], ['Telefone', c.tel], ['Cidade', c.cidade], ['Viagens', feitas + (c.canceladas ? ' (+' + c.canceladas + ' cancelada)' : '')], ['Total gasto', brl(c.gasto)], ['Aceita novidades', c.novidades ? 'Sim' : 'Não']]
+    $('f-dados').innerHTML = [['CPF', c.cpf], ['Nascimento', c.nasc], ['E-mail', c.email], ['Telefone', c.tel], ['Cidade', c.cidade], ['Viagens', feitas + (c.canceladas ? ' (+' + c.canceladas + ' cancelada)' : '')], ['Total gasto', brl(c.gasto)], ['Aceita novidades', c.novidades ? 'Sim' : 'Não']]
       .map(function (d) { return '<div><span>' + d[0] + '</span>' + esc(d[1]) + '</div>'; }).join('');
     $('f-perfil').innerHTML = c.perfil.map(function (p) { return '<span class="chip" style="font-size:13px;padding:5px 10px">' + esc(p) + '</span>'; }).join('');
     $('f-rec').innerHTML = '<strong>' + esc(c.rec.destino) + '</strong> — ' + esc(c.rec.data) + ' · ' + brl(c.rec.valor) + ' por pessoa. Escolhida pelo perfil e por ser um destino que ' + esc(c.nome.split(' ')[0]) + ' ainda não fez.';
     $('f-msg').value = mensagem(c);
+    $('f-niver').hidden = !c.niver;
+    if (c.niver) {
+      var idade = hoje.getFullYear() - +c.nasc.slice(6);
+      $('f-niver-txt').innerHTML = esc(c.nome.split(' ')[0]) + (c.diaNiver < hoje.getDate() ? ' fez' : c.diaNiver === hoje.getDate() ? ' faz hoje' : ' faz') + ' <strong>' + idade + ' anos em ' + esc(c.nasc.slice(0, 5)) + '</strong>. No mês do aniversário tem <strong>desconto especial</strong>, com as condições combinadas pelo WhatsApp.';
+      $('f-niver-msg').value = mensagemNiver(c);
+      $('f-niver-acao').innerHTML = (c.novidades
+        ? '<button type="button" class="btn btn-o" id="enviar-niver">Enviar parabéns + desconto</button>'
+        : '<span style="background:#FFFFFF;border-radius:12px;padding:10px 12px;font-size:14px;color:#7A3608"><strong>Sem autorização para novidades:</strong> dê os parabéns só se o cliente chamar.</span>') +
+        '<label style="display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px"><input type="checkbox" id="niver-usado" style="width:20px;height:20px;accent-color:#2E8B57"' + (usadoNiver(c) ? ' checked' : '') + '> Desconto usado</label>';
+      $('f-niver').setAttribute('data-i', CLIENTES.indexOf(c));
+    }
     $('f-acao').innerHTML = c.novidades
       ? '<button type="button" class="btn btn-o" id="enviar">Enviar pelo WhatsApp</button> <span class="small">Na demonstração, o WhatsApp abre para você escolher o contato.</span>'
       : '<p style="margin:0;background:#FFF1E6;border-radius:12px;padding:12px 14px;font-size:14px;color:#7A3608"><strong>Cliente não autorizou receber novidades.</strong> Pela LGPD, só envie sugestões para quem marcou essa opção na reserva.</p>';
@@ -187,8 +226,13 @@ var CLIENTES = [{"nome": "Gabriela Exemplo", "cpf": "000.000.000-07", "email": "
   $('ficha').addEventListener('click', function (e) {
     if (e.target.closest('[data-fechar]')) { fechar(); return; }
     if (e.target.id === 'enviar') window.open('https://wa.me/?text=' + encodeURIComponent($('f-msg').value), '_blank', 'noopener');
+    if (e.target.id === 'enviar-niver') window.open('https://wa.me/?text=' + encodeURIComponent($('f-niver-msg').value), '_blank', 'noopener');
   });
   $('ficha').addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+  $('ficha').addEventListener('change', function (e) {
+    if (e.target.id !== 'niver-usado') return;
+    usadoNiver(CLIENTES[+$('f-niver').getAttribute('data-i')], e.target.checked); lista();
+  });
   kpis(); lista();
 })();
 </script>

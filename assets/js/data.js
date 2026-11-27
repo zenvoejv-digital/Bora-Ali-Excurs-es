@@ -49,6 +49,10 @@ window.BORA_CONFIG = {
   // Passou do prazo sem pagar, a planilha libera a vaga. Use o mesmo valor de PRAZO_SINAL_HORAS no Apps Script.
   prazoSinalHoras: 24,
 
+  // ANIVERSARIANTE DO MÊS: quem faz aniversário no mês do passeio ganha desconto especial.
+  // O site avisa na reserva e a mensagem do WhatsApp sai marcada; as condições são combinadas no WhatsApp.
+  descontoAniversario: { ativo: true, texto: "Aniversariante do mês tem desconto especial! As condições são confirmadas pelo WhatsApp." },
+
   // Mostrar "Restam X vagas" quando sobrarem até este número de lugares
   avisoVagas: 10,
 
