@@ -247,3 +247,11 @@ html,body{overflow-x:clip}
 @keyframes fxBalao{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-12px)}}
 @media (max-width:640px){.band-box > .band-fx{inset:auto 0 0 0;height:150px;opacity:.8}}
 @media (prefers-reduced-motion: reduce){.band-fx,.band-fx *{animation:none !important}.band-fx .fx-dolphin,.band-fx .fx-leaf{opacity:0}}
+/* degradê do topo (azul vivo -> laranja) levado para o site todo */
+.page-bg{background:linear-gradient(180deg,#D9E9FB 0%,#EAF3FD 12%,#F8FBFF 30%,#FFFFFF 46%,#FFF7EF 68%,#FFEBDA 86%,#FFDDC2 100%) !important}
+.embarque-box{background:linear-gradient(118deg,#DCEBFB 0%,#EEF5FD 50%,#FFE7D2 100%) !important}
+.footer-bg{background-color:#0A4D8C !important;background-image:radial-gradient(circle at 88% 12%,rgba(255,196,92,.45),rgba(255,196,92,0) 38%),linear-gradient(118deg,#063B78 0%,#0B5BB5 38%,#1E74CF 54%,#D06A2E 80%,#B8511A 100%) !important}
+.footer-bg .foot-label{color:#FFE3C8 !important}
+.footer-bg .foot-cta{background:#FFFFFF !important;color:#06284D !important;box-shadow:0 10px 24px rgba(4,30,64,.25)}
+.footer-bg .foot-cta svg{color:#25A85A}
+@media (max-width:860px){.footer-bg{background-image:radial-gradient(circle at 50% 100%,rgba(255,196,92,.4),rgba(255,196,92,0) 45%),linear-gradient(172deg,#063B78 0%,#0B5BB5 40%,#1E74CF 62%,#D06A2E 88%,#B8511A 100%) !important}}
