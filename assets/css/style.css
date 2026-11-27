@@ -269,3 +269,6 @@ html,body{overflow-x:clip}
 .on-blue{color:#FFFFFF !important}
 .on-blue-soft{color:#DCE9F7 !important}
 .on-blue-kicker{color:#FFC08A !important}
+/* fim do topo se fundindo no azul do site (sem linha de corte) */
+#inicio > .hero-bg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:200px;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(11,91,181,0) 0%,rgba(11,91,181,.55) 45%,#0B5BB5 100%)}
+@media (max-width:860px){#inicio > .hero-bg::after{height:140px}}
