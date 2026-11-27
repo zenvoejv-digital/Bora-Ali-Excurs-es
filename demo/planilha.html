@@ -81,7 +81,17 @@
   trHead.insertAdjacentHTML('beforeend', TH + 'Prazo do sinal / confirmação</th>' + TH + 'Menor / autorização</th>');
   Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) { tr.insertAdjacentHTML('beforeend', '<td style="' + td + '; color: #8496AB">-</td><td style="' + td + '; color: #8496AB">-</td>'); });
   var STATUS = ['Aguardando sinal', 'Sinal pago', 'Pago', 'Prazo vencido', 'Cancelada'];
-  var COR = { 'Aguardando sinal': ['#FFF1E6', '#7A3608'], 'Sinal pago': ['#E2F1FC', '#0A4D8C'], 'Pago': ['#E6F4EA', '#1E5B37'], 'Prazo vencido': ['#FDE2E2', '#8A1C1C'], 'Cancelada': ['#F1F1F1', '#55657A'] };
+  (function () {
+    var L = { 'Aguardando sinal': ['#FFF6DB', '#FFE08A', '#7A4B00'], 'Sinal pago': ['#E4F0FD', '#A9CFF7', '#0A3D6E'], 'Pago': ['#E4F6EA', '#93D8A8', '#14532D'], 'Prazo vencido': ['#FDE6E3', '#F4A99F', '#7F1D1D'], 'Cancelada': ['#EFEFEF', '#C9C9C9', '#555555'] };
+    Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) {
+      var chip = tr.children[2] && tr.children[2].querySelector('span'); if (!chip) return;
+      var c = L[chip.textContent.trim()]; if (!c) return;
+      tr.style.background = c[0]; chip.style.background = c[1]; chip.style.color = c[2];
+      if (chip.textContent.trim() === 'Cancelada') tr.style.color = '#8A8A8A';
+    });
+  })();
+  var LINHA = { 'Aguardando sinal': '#FFF6DB', 'Sinal pago': '#E4F0FD', 'Pago': '#E4F6EA', 'Prazo vencido': '#FDE6E3', 'Cancelada': '#EFEFEF' };
+  var COR = { 'Aguardando sinal': ['#FFE08A', '#7A4B00'], 'Sinal pago': ['#A9CFF7', '#0A3D6E'], 'Pago': ['#93D8A8', '#14532D'], 'Prazo vencido': ['#F4A99F', '#7F1D1D'], 'Cancelada': ['#C9C9C9', '#555555'] };
   function duas(n) { return ('0' + n).slice(-2); }
   function contador(ms) { if (ms <= 0) return '00:00:00'; var s = Math.floor(ms / 1000), d = Math.floor(s / 86400); return (d ? d + 'd ' : '') + duas(Math.floor(s % 86400 / 3600)) + ':' + duas(Math.floor(s % 3600 / 60)) + ':' + duas(s % 60); }
   function dataHora(iso) { var d = new Date(iso); return duas(d.getDate()) + '/' + duas(d.getMonth() + 1) + ' ' + duas(d.getHours()) + ':' + duas(d.getMinutes()); }
@@ -132,11 +142,15 @@
     Array.prototype.forEach.call(tb.querySelectorAll('tr[data-demo]'), function (tr) { tr.remove(); });
     var html = lista.map(function (r, i) {
       var menor = r.aut && A.ehMenor(r.aut.a, r.aut.r);
-      return '<tr data-demo style="background: ' + (menor ? '#FFE8D6' : '#FFF8F0') + '">' +
+      var stR = r.status || 'Aguardando sinal';
+      return '<tr data-demo style="background: ' + (LINHA[stR] || '#FFF8F0') + (stR === 'Cancelada' ? '; color: #8A8A8A' : '') + '">' +
         '<td style="' + td + '">' + esc(r.hora) + '</td>' +
         '<td style="' + td + '"><strong>' + esc(r.codigo) + '</strong>' + novo + '</td>' +
         '<td style="' + td + '">' + celulaStatus(r, i) + '</td>' +
-        ['destino', 'data', 'tipo', 'nome', 'embarque', 'pagamento', 'total', 'sinal'].map(function (k) { return '<td style="' + td + '">' + esc(r[k]) + '</td>'; }).join('') +
+        ['destino', 'data', 'tipo', 'nome', 'embarque', 'pagamento', 'total', 'sinal'].map(function (k) {
+          var mn = k === 'nome' && menor ? '; background: #FFE8D6; color: #7A3608; font-weight: 700' : '';
+          return '<td style="' + td + mn + '">' + esc(r[k]) + '</td>';
+        }).join('') +
         celulaPrazo(r, i) + celulaMenor(r, i) + '</tr>';
     }).join('');
     tb.insertAdjacentHTML('afterbegin', html);

@@ -113,3 +113,17 @@ Quem faz aniversário no mês tem **desconto especial**, com as condições comb
 - Marque **Desconto usado** e anote as **Condições combinadas**: isso é guardado quando a aba é atualizada.
 - Com **Atualizar o painel sozinho todo dia** ligado, a aba de aniversariantes também se atualiza sozinha.
 - Para citar um valor na mensagem (ex.: "10% de desconto"), escreva em `DESCONTO_ANIVERSARIO` no topo do código.
+
+## Cores por situação
+
+Cada reserva na aba **Reservas** muda de cor sozinha conforme o **Status**:
+
+| Status | Cor da linha |
+|---|---|
+| Aguardando sinal | amarelo |
+| Sinal pago | azul |
+| Pago | verde |
+| Prazo vencido | vermelho |
+| Cancelada | cinza (letra apagada) |
+
+A célula do Status fica com a cor mais forte e em negrito. Menores de idade têm o **nome** e a **autorização** em laranja. Em planilhas que já existiam, use uma vez o menu **Bora Ali › Aplicar cores por situação**.

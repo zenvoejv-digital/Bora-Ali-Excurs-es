@@ -61,6 +61,7 @@ function onOpen() {
     .addItem('Atualizar o painel sozinho todo dia', 'ativarAtualizacaoDiaria')
     .addSeparator()
     .addItem('Gerar lista de embarque', 'gerarListaEmbarque')
+    .addItem('Aplicar cores por situação', 'aplicarCoresStatus')
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Menores de idade')
       .addItem('Gerar/atualizar autorização (linhas selecionadas)', 'gerarAutorizacaoSelecionada')
       .addItem('Conferir menores em todas as reservas', 'atualizarMenores')
@@ -85,6 +86,7 @@ function configurarPlanilha() {
     r.getRange('C2:C').setDataValidation(regra);
     r.getRange('B:B').setFontWeight('bold');
     validacoesMenores_(r);
+    aplicarCoresStatus_(r);
     r.setColumnWidths(1, CAB_RESERVAS.length, 140);
   }
   var a = ss.getSheetByName(ABA_AGENDA) || ss.insertSheet(ABA_AGENDA);
@@ -196,6 +198,7 @@ function doPost(e) {
     if (sh.getRange(1, CAB_RESERVAS.length).getValue() !== CAB_RESERVAS[CAB_RESERVAS.length - 1]) {
       sh.getRange(1, 1, 1, CAB_RESERVAS.length).setValues([CAB_RESERVAS]).setFontWeight('bold').setBackground('#0A4D8C').setFontColor('#FFFFFF');
       sh.getRange(2, 3, sh.getMaxRows() - 1, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(STATUS, true).build());
+      aplicarCoresStatus_(sh);
     }
     // prazo do sinal = prazo do link de pagamento
     var agoraMs = Date.now(), limite = agoraMs + PRAZO_SINAL_HORAS * 3600000;
@@ -658,7 +661,7 @@ function prepararMenores_(sh, codigos, forcar) {
       return;
     }
     res.menores++;
-    faixa.setBackground(l[2] === 'Cancelada' ? '#eeeeee' : COR_MENOR);
+    if (String(faixa.getBackground()).toLowerCase() === COR_MENOR) faixa.setBackground(null);   // o destaque do menor agora é feito pelas cores automáticas
     var ent = String(l[COL_ENTREGUE - 1]).toUpperCase();
     if (ent !== 'TRUE' && ent !== 'FALSE') sh.getRange(linha, COL_ENTREGUE).insertCheckboxes();
     var c = contratantes[l[1]] || [];
@@ -1140,4 +1143,44 @@ function atualizarAniversariantes(silencioso) {
   sh.hideColumns(11);
   sh.setFrozenRows(4); sh.setColumnWidths(1, cab.length, 130); sh.setColumnWidth(1, 220); sh.setColumnWidth(10, 220); sh.setColumnWidth(12, 230);
   if (silencioso !== true) { ss.setActiveSheet(sh); ss.toast(saida.length + ' aniversariante(s) em ' + MESES[mes - 1] + '.', 'Bora Ali', 5); }
+}
+
+// ======================================================================
+// CORES POR SITUAÇÃO: cada linha da aba Reservas muda de cor sozinha conforme o Status
+// ======================================================================
+var CORES_STATUS = {
+  'Aguardando sinal': { linha: '#FFF6DB', status: '#FFE08A', texto: '#7A4B00' },
+  'Sinal pago':       { linha: '#E4F0FD', status: '#A9CFF7', texto: '#0A3D6E' },
+  'Pago':             { linha: '#E4F6EA', status: '#93D8A8', texto: '#14532D' },
+  'Prazo vencido':    { linha: '#FDE6E3', status: '#F4A99F', texto: '#7F1D1D' },
+  'Cancelada':        { linha: '#EFEFEF', status: '#C9C9C9', texto: '#555555' }
+};
+function aplicarCoresStatus_(sh) {
+  var n = Math.max(sh.getMaxRows() - 1, 1), cols = CAB_RESERVAS.length;
+  var linhas = sh.getRange(2, 1, n, cols), status = sh.getRange(2, 3, n, 1);
+  var nome = sh.getRange(2, 8, n, 1), aut = sh.getRange(2, COL_AUT, n, 1);
+  var R = function () { return SpreadsheetApp.newConditionalFormatRule(); };
+  var regras = [];
+  // 1) a célula do Status, em destaque
+  Object.keys(CORES_STATUS).forEach(function (st) {
+    var c = CORES_STATUS[st];
+    regras.push(R().whenTextEqualTo(st).setBackground(c.status).setFontColor(c.texto).setBold(true).setRanges([status]).build());
+  });
+  // 2) menor de idade: nome e autorização em laranja
+  regras.push(R().whenFormulaSatisfied('=$AB2<>""').setBackground(COR_MENOR).setFontColor('#7A3608').setBold(true).setRanges([nome, aut]).build());
+  // 3) a linha inteira na cor da situação
+  Object.keys(CORES_STATUS).forEach(function (st) {
+    var c = CORES_STATUS[st], r = R().whenFormulaSatisfied('=$C2="' + st + '"').setBackground(c.linha).setRanges([linhas]);
+    if (st === 'Cancelada') r = r.setFontColor('#8A8A8A');
+    regras.push(r.build());
+  });
+  sh.setConditionalFormatRules(regras);
+}
+function aplicarCoresStatus() {
+  var sh = SpreadsheetApp.getActive().getSheetByName(ABA_RESERVAS);
+  if (!sh) { SpreadsheetApp.getUi().alert('Ainda não existe a aba Reservas.'); return; }
+  // tira cores antigas pintadas à mão pelo script (as novas são automáticas)
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, CAB_RESERVAS.length).setBackground(null);
+  aplicarCoresStatus_(sh);
+  SpreadsheetApp.getActive().toast('Cores aplicadas: amarelo = aguardando sinal, azul = sinal pago, verde = pago, vermelho = prazo vencido, cinza = cancelada. Menores ficam em laranja no nome.', 'Bora Ali', 8);
 }
