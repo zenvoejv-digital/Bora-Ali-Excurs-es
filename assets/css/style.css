@@ -11,11 +11,6 @@ html{scroll-behavior:smooth}
 .hero-bg > .hero-art{position:absolute;z-index:0;top:50%;right:-40px;height:125%;aspect-ratio:1/1;transform:translateY(-50%)}
 .hero-bg > .hero-shade{position:absolute;z-index:1;inset:0;background:linear-gradient(90deg,#06284D 0%,#06284D 36%,rgba(6,40,77,0.55) 52%,rgba(6,40,77,0) 68%)}
 .hero-art img{position:absolute;display:block;max-width:none}
-.hero-art .hero-clean{left:0;top:0;width:100%;height:100%}
-.hero-art .hero-plane{left:32.78%;top:24.96%;width:35.09%;animation:heroPlane 7s ease-in-out infinite}
-.hero-art .hero-boat{left:25.52%;top:53.43%;width:52.23%;transform-origin:50% 70%;animation:heroBoat 4.5s ease-in-out infinite}
-@keyframes heroPlane{0%,100%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(2%,-5%) rotate(-1.5deg)}50%{transform:translate(4%,-9%) rotate(-2.5deg)}75%{transform:translate(2%,-4%) rotate(-1deg)}}
-@keyframes heroBoat{0%,100%{transform:rotate(-1.6deg) translateY(0)}50%{transform:rotate(1.6deg) translateY(-2.5%)}}
 @media (max-width:860px){.hero-bg > .hero-art{right:50%;height:115%;transform:translate(50%,-50%)}.hero-bg > .hero-shade{background:linear-gradient(180deg,rgba(6,40,77,0.9),rgba(6,40,77,0.82))}}
 .footer-bg{background-color:#06284D;background-image:linear-gradient(180deg,rgba(6,40,77,0.92),rgba(6,40,77,0.97)),url(../img/ceu-aviao.jpg);background-size:cover;background-position:center}
 .tile{transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
@@ -121,3 +116,30 @@ html,body{overflow-x:clip}
   .header-cta{padding:10px 14px !important;font-size:14px !important}
 }
 
+/* fundo do topo: cena viva inspirada na logo (rosa dos ventos, pôr do sol em faixas, avião e lancha) */
+.hero-bg{background-image:radial-gradient(circle at 80% 50%,rgba(244,123,32,.28),rgba(244,123,32,0) 45%),linear-gradient(150deg,#06284D 0%,#0A3D6E 100%)}
+.hero-art .hero-anim{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.hero-anim .ha-rose{transform-origin:300px 300px;animation:haGira 90s linear infinite}
+.hero-anim .ha-glow{transform-origin:300px 300px;animation:haPulsa 6s ease-in-out infinite}
+.hero-anim .ha-sun{transform-origin:300px 335px;animation:haSol 5s ease-in-out infinite}
+.hero-anim .ha-plane{animation:haVoo 12s linear infinite}
+.hero-anim .ha-boat-pos{transform:translate(255px,330px);animation:haNavega 16s ease-in-out infinite}
+.hero-anim .ha-boat{transform-box:fill-box;transform-origin:50% 80%;animation:haBalanca 3.6s ease-in-out infinite}
+.hero-anim .ha-wave1{animation:haOnda 5s linear infinite}
+.hero-anim .ha-wave2{animation:haOnda2 4s linear infinite}
+.hero-anim .ha-wave3{animation:haOnda3 7s linear infinite}
+.hero-anim .ha-cloud1{animation:haNuvem 26s ease-in-out infinite}
+.hero-anim .ha-cloud2{animation:haNuvem 32s ease-in-out infinite reverse}
+@keyframes haGira{to{transform:rotate(360deg)}}
+@keyframes haPulsa{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+@keyframes haSol{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes haVoo{0%{transform:translate(40px,290px) rotate(-18deg);opacity:0}8%{opacity:1}70%{transform:translate(460px,120px) rotate(-18deg);opacity:1}78%,100%{transform:translate(540px,88px) rotate(-18deg);opacity:0}}
+@keyframes haNavega{0%,100%{transform:translate(225px,330px)}50%{transform:translate(285px,334px)}}
+@keyframes haBalanca{0%,100%{transform:rotate(-2.2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-4px)}}
+@keyframes haOnda{to{transform:translateX(-90px)}}
+@keyframes haOnda2{from{transform:translateX(-70px)}to{transform:translateX(0)}}
+@keyframes haOnda3{to{transform:translateX(-110px)}}
+@keyframes haNuvem{0%,100%{transform:translateX(0)}50%{transform:translateX(40px)}}
+@media (prefers-reduced-motion: reduce){.hero-anim *{animation:none !important}.hero-anim .ha-plane{transform:translate(250px,170px) rotate(-18deg)}}
+.hero-bg > .hero-art{top:calc(50% - 48px);right:-110px;height:112%}
+@media (max-width:860px){.hero-bg > .hero-art{top:auto;bottom:-6%;right:50%;height:auto;width:150%;transform:translateX(50%)}.hero-bg > .hero-shade{background:linear-gradient(180deg,rgba(6,40,77,0.86) 0%,rgba(6,40,77,0.78) 55%,rgba(6,40,77,0.55) 100%)}}
