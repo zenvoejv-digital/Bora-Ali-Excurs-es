@@ -255,3 +255,8 @@ html,body{overflow-x:clip}
 .footer-bg .foot-cta{background:#FFFFFF !important;color:#06284D !important;box-shadow:0 10px 24px rgba(4,30,64,.25)}
 .footer-bg .foot-cta svg{color:#25A85A}
 @media (max-width:860px){.footer-bg{background-image:radial-gradient(circle at 50% 100%,rgba(255,196,92,.4),rgba(255,196,92,0) 45%),linear-gradient(172deg,#063B78 0%,#0B5BB5 40%,#1E74CF 62%,#D06A2E 88%,#B8511A 100%) !important}}
+/* topo de ponta a ponta (largura toda da tela), com o conteúdo alinhado ao resto do site */
+#inicio{padding:0 !important}
+#inicio > .hero-bg{max-width:none !important;border-radius:0 !important;padding-left:max(clamp(24px,5vw,72px),calc((100% - 1280px) / 2 + 72px)) !important;padding-right:max(clamp(24px,5vw,72px),calc((100% - 1280px) / 2 + 72px)) !important}
+#inicio > .hero-bg > .hero-art{right:max(clamp(16px,3vw,48px),calc((100% - 1280px) / 2 + 48px))}
+@media (max-width:860px){#inicio > .hero-bg > .hero-art{right:50%}}
