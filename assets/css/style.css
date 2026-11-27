@@ -153,3 +153,12 @@ html,body{overflow-x:clip}
 .tile:hover .tile-img img,.tile:focus-visible .tile-img img{transform:scale(1.08) translateY(-3px) rotate(-2deg)}
 @media (prefers-reduced-motion: reduce){.tile .tile-img img{transition:none}.tile:hover .tile-img img{transform:none}}
 @media (max-width:560px){#category-tiles{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}#category-tiles .tile{padding:12px !important;gap:8px !important}#category-tiles .tile-img{height:92px !important}}
+/* cartões das categorias: degradê nas cores de cada ilustração */
+.tile{position:relative;transition:border-color .25s,box-shadow .25s,transform .25s}
+.tile .tile-img{position:relative}
+.tile .tile-img::after{content:"";position:absolute;left:12%;right:12%;bottom:8px;height:10px;border-radius:50%;background:rgba(6,40,77,.12);filter:blur(4px)}
+.tile .tile-img img{position:relative;z-index:1}
+.tile::after{content:"";position:absolute;left:18px;right:18px;bottom:-2px;height:4px;border-radius:4px 4px 0 0;background:var(--acc,#F47B20);opacity:0;transition:opacity .25s}
+.tile:hover,.tile:focus-visible{border-color:var(--acc,#F47B20) !important;box-shadow:0 14px 30px -14px var(--acc,#F47B20);transform:translateY(-3px)}
+.tile:hover::after,.tile:focus-visible::after{opacity:1}
+@media (prefers-reduced-motion: reduce){.tile{transition:none}.tile:hover{transform:none}}

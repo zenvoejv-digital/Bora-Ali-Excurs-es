@@ -40,11 +40,11 @@
   }
 
   var CATEGORIAS = [
-    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#DCEBFA', tileInk: '#0A4D8C', anim: 'r-zoom' },
-    { id: 'praias', key: 'praia', kicker: 'BATE E VOLTA', title: 'Praias', subtitle: 'Litoral paulista e Rio de Janeiro', band: '#1B8EDB', bandInk: '#06284D', tileBg: '#E2F1FC', tileInk: '#0A6BB0', anim: 'r-up' },
-    { id: 'parques', key: 'parques', kicker: 'DIVERSÃO GARANTIDA', title: 'Parques e águas termais', subtitle: 'Brinquedos, piscinas e muita risada', band: '#F47B20', bandInk: '#06284D', tileBg: '#FFEADB', tileInk: '#B4520A', anim: 'r-pop' },
-    { id: 'natureza', key: 'natureza', kicker: 'SERRA E MONTANHA', title: 'Natureza', subtitle: 'Mirantes, flores e ar puro', band: '#06284D', bandInk: '#FFFFFF', tileBg: '#E7EEF6', tileInk: '#06284D', anim: 'r-left' },
-    { id: 'passeios', key: 'passeios', kicker: 'CULTURA, FÉ E COMPRAS', title: 'Passeios', subtitle: 'Zoológico, Aparecida, Serra Negra e mais', band: '#FFF1E6', bandInk: '#06284D', tileBg: '#FFF1E6', tileInk: '#B4520A', anim: 'r-flip' }
+    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#DCEBFA', tileInk: '#0A4D8C', anim: 'r-zoom' , tileGrad: 'linear-gradient(155deg,#DCEBFA 0%,#F7E4C8 62%,#F2C98E 100%)', tileAcc: '#C8913A' },
+    { id: 'praias', key: 'praia', kicker: 'BATE E VOLTA', title: 'Praias', subtitle: 'Litoral paulista e Rio de Janeiro', band: '#1B8EDB', bandInk: '#06284D', tileBg: '#E2F1FC', tileInk: '#0A6BB0', anim: 'r-up' , tileGrad: 'linear-gradient(180deg,#CDEEFF 0%,#A9E0F5 48%,#FBE6A8 100%)', tileAcc: '#1B8EDB' },
+    { id: 'parques', key: 'parques', kicker: 'DIVERSÃO GARANTIDA', title: 'Parques e águas termais', subtitle: 'Brinquedos, piscinas e muita risada', band: '#F47B20', bandInk: '#06284D', tileBg: '#FFEADB', tileInk: '#B4520A', anim: 'r-pop' , tileGrad: 'linear-gradient(160deg,#FFF1D0 0%,#C7F0EA 52%,#9FE3D6 100%)', tileAcc: '#14A39A' },
+    { id: 'natureza', key: 'natureza', kicker: 'SERRA E MONTANHA', title: 'Natureza', subtitle: 'Mirantes, flores e ar puro', band: '#06284D', bandInk: '#FFFFFF', tileBg: '#E7EEF6', tileInk: '#06284D', anim: 'r-left' , tileGrad: 'linear-gradient(160deg,#FFF0C2 0%,#D8F0BE 50%,#A9DB8C 100%)', tileAcc: '#4E9A2E' },
+    { id: 'passeios', key: 'passeios', kicker: 'CULTURA, FÉ E COMPRAS', title: 'Passeios', subtitle: 'Zoológico, Aparecida, Serra Negra e mais', band: '#FFF1E6', bandInk: '#06284D', tileBg: '#FFF1E6', tileInk: '#B4520A', anim: 'r-flip' , tileGrad: 'linear-gradient(160deg,#FFE9C4 0%,#EFE3B5 45%,#BFE0B0 100%)', tileAcc: '#B8862C' }
   ];
 
   var PAGAMENTOS = [
@@ -165,8 +165,8 @@
       var list = viagensDe(c);
       var min = list.length ? Math.min.apply(null, list.map(function (v) { return v.valor; })) : 0;
       var count = list.length === 1 ? '1 viagem' : list.length + ' viagens';
-      return '<a class="tile" href="#' + c.id + '" style="display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: #0F1B2D; border: 2px solid #E4EDF6; border-radius: 20px; padding: 18px; background: #FFFFFF">' +
-        '<span class="tile-img" style="height: 112px; border-radius: 16px; background: ' + c.tileBg + '; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden">' +
+      return '<a class="tile" href="#' + c.id + '" style="--acc: ' + c.tileAcc + '; display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: #0F1B2D; border: 2px solid #E4EDF6; border-radius: 20px; padding: 18px; background: #FFFFFF">' +
+        '<span class="tile-img" style="height: 112px; border-radius: 16px; background: ' + c.tileGrad + '; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden">' +
           '<img src="/assets/img/categorias/' + c.key + '.webp" alt="" width="180" height="140" loading="lazy" decoding="async" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain">' +
         '</span>' +
         '<span style="display: flex; flex-direction: column; gap: 2px">' +
