@@ -40,7 +40,7 @@
   }
 
   var CATEGORIAS = [
-    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#0A4D8C', tileInk: '#FFFFFF', anim: 'r-zoom' },
+    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#DCEBFA', tileInk: '#0A4D8C', anim: 'r-zoom' },
     { id: 'praias', key: 'praia', kicker: 'BATE E VOLTA', title: 'Praias', subtitle: 'Litoral paulista e Rio de Janeiro', band: '#1B8EDB', bandInk: '#06284D', tileBg: '#E2F1FC', tileInk: '#0A6BB0', anim: 'r-up' },
     { id: 'parques', key: 'parques', kicker: 'DIVERSÃO GARANTIDA', title: 'Parques e águas termais', subtitle: 'Brinquedos, piscinas e muita risada', band: '#F47B20', bandInk: '#06284D', tileBg: '#FFEADB', tileInk: '#B4520A', anim: 'r-pop' },
     { id: 'natureza', key: 'natureza', kicker: 'SERRA E MONTANHA', title: 'Natureza', subtitle: 'Mirantes, flores e ar puro', band: '#06284D', bandInk: '#FFFFFF', tileBg: '#E7EEF6', tileInk: '#06284D', anim: 'r-left' },
@@ -166,7 +166,9 @@
       var min = list.length ? Math.min.apply(null, list.map(function (v) { return v.valor; })) : 0;
       var count = list.length === 1 ? '1 viagem' : list.length + ' viagens';
       return '<a class="tile" href="#' + c.id + '" style="display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: #0F1B2D; border: 2px solid #E4EDF6; border-radius: 20px; padding: 18px; background: #FFFFFF">' +
-        '<span style="width: 48px; height: 48px; border-radius: 14px; background: ' + c.tileBg + '; color: ' + c.tileInk + '; display: flex; align-items: center; justify-content: center">' + (ART.ICONS[c.key] || '') + '</span>' +
+        '<span class="tile-img" style="height: 112px; border-radius: 16px; background: ' + c.tileBg + '; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden">' +
+          '<img src="/assets/img/categorias/' + c.key + '.webp" alt="" width="180" height="140" loading="lazy" decoding="async" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain">' +
+        '</span>' +
         '<span style="display: flex; flex-direction: column; gap: 2px">' +
         '<span style="font-family: \'Poppins\', sans-serif; font-weight: 600; font-size: 17px">' + esc(c.title) + '</span>' +
         '<span style="font-size: 14px; color: #55657A">' + count + ' · a partir de ' + (list.length ? brl(min) : '—') + '</span>' +

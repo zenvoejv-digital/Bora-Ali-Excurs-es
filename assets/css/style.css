@@ -148,3 +148,8 @@ html,body{overflow-x:clip}
 .hero-bg{background-color:#0A4D8C;background-image:radial-gradient(circle at 82% 42%,rgba(255,196,92,.55),rgba(255,196,92,0) 34%),linear-gradient(118deg,#063B78 0%,#0B5BB5 38%,#1E74CF 52%,#E98A4E 78%,#F47B20 100%)}
 .hero-bg > .hero-shade{background:linear-gradient(90deg,rgba(4,36,82,.42) 0%,rgba(4,36,82,.18) 40%,rgba(4,36,82,0) 60%)}
 @media (max-width:860px){.hero-bg{background-image:radial-gradient(circle at 50% 100%,rgba(255,196,92,.45),rgba(255,196,92,0) 45%),linear-gradient(172deg,#063B78 0%,#0B5BB5 45%,#1E74CF 68%,#E98A4E 92%,#F47B20 100%)}.hero-bg > .hero-shade{background:linear-gradient(180deg,rgba(4,36,82,.45),rgba(4,36,82,.2) 70%,rgba(4,36,82,0))}}
+/* ilustrações das categorias */
+.tile .tile-img img{transition:transform .35s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 6px 10px rgba(6,40,77,.18))}
+.tile:hover .tile-img img,.tile:focus-visible .tile-img img{transform:scale(1.08) translateY(-3px) rotate(-2deg)}
+@media (prefers-reduced-motion: reduce){.tile .tile-img img{transition:none}.tile:hover .tile-img img{transform:none}}
+@media (max-width:560px){#category-tiles{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}#category-tiles .tile{padding:12px !important;gap:8px !important}#category-tiles .tile-img{height:92px !important}}
