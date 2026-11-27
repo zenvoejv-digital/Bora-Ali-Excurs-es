@@ -166,3 +166,78 @@ html,body{overflow-x:clip}
 .band-img{animation:bandFlutua 5s ease-in-out infinite;filter:drop-shadow(0 10px 14px rgba(6,40,77,.22))}
 @keyframes bandFlutua{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-1.5deg)}}
 @media (prefers-reduced-motion: reduce){.band-img{animation:none}}
+/* animações das faixas das seções (cada uma combina com a ilustração) */
+.band-box{position:relative}
+.band-box > .band-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.band-box > div{position:relative;z-index:1}
+.band-fx *{transform-box:fill-box;transform-origin:center}
+/* praia: ondas, golfinhos e gaivotas */
+.band-fx .fx-wave1{transform-box:view-box;animation:fxOnda 6s linear infinite}
+.band-fx .fx-wave2{transform-box:view-box;animation:fxOnda2 4.5s linear infinite}
+@keyframes fxOnda{to{transform:translateX(-60px)}}
+@keyframes fxOnda2{from{transform:translateX(-46px)}to{transform:translateX(0)}}
+.band-fx .fx-dolphin{transform-box:view-box;transform-origin:0 0;opacity:0}
+.band-fx .fx-d1{animation:fxSalto 5.5s ease-in-out infinite}
+.band-fx .fx-d2{animation:fxSalto2 5.5s ease-in-out infinite 2.4s}
+@keyframes fxSalto{0%{transform:translate(400px,170px) rotate(-40deg);opacity:0}8%{opacity:1}25%{transform:translate(440px,95px) rotate(0deg)}42%{transform:translate(480px,170px) rotate(45deg);opacity:1}48%,100%{transform:translate(480px,190px) rotate(45deg);opacity:0}}
+@keyframes fxSalto2{0%{transform:translate(520px,170px) rotate(-40deg);opacity:0}8%{opacity:1}25%{transform:translate(552px,108px) rotate(0deg)}42%{transform:translate(585px,170px) rotate(45deg);opacity:1}48%,100%{transform:translate(585px,190px) rotate(45deg);opacity:0}}
+.band-fx .fx-gull{transform-box:view-box}
+.band-fx .fx-g1{animation:fxGaivota 14s linear infinite}
+.band-fx .fx-g2{animation:fxGaivota 18s linear infinite 4s}
+@keyframes fxGaivota{0%{transform:translate(330px,70px)}50%{transform:translate(470px,58px)}100%{transform:translate(620px,74px)}}
+.band-fx .fx-gull path,.band-fx .fx-bird path{animation:fxAsa .9s ease-in-out infinite alternate}
+@keyframes fxAsa{to{transform:scaleY(.55)}}
+/* termais: vapor, bolhas e ondinhas */
+.band-fx .fx-steam{stroke-dasharray:160;animation:fxVapor 4.5s ease-in-out infinite}
+.band-fx .fx-s2{animation-delay:1.1s}.band-fx .fx-s3{animation-delay:2.2s}.band-fx .fx-s4{animation-delay:3.3s}
+@keyframes fxVapor{0%{stroke-dashoffset:160;opacity:0;transform:translateY(10px)}30%{opacity:.75}100%{stroke-dashoffset:0;opacity:0;transform:translateY(-14px)}}
+.band-fx .fx-bubble{animation:fxBolha 4s ease-in infinite}
+.band-fx .fx-b2{animation-delay:.8s}.band-fx .fx-b3{animation-delay:1.6s}.band-fx .fx-b4{animation-delay:2.4s}.band-fx .fx-b5{animation-delay:3.2s}
+@keyframes fxBolha{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translateY(-110px) scale(1.1);opacity:0}}
+.band-fx .fx-ripple{animation:fxAnel 3s ease-out infinite}.band-fx .fx-r2{animation-delay:1.5s}
+@keyframes fxAnel{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+/* natureza: borboletas, folhas e pássaros */
+.band-fx .fx-butter{transform-box:view-box}
+.band-fx .fx-bt1{animation:fxBorb 11s ease-in-out infinite}
+.band-fx .fx-bt2{animation:fxBorb2 13s ease-in-out infinite}
+@keyframes fxBorb{0%,100%{transform:translate(400px,110px)}25%{transform:translate(470px,70px)}50%{transform:translate(545px,115px)}75%{transform:translate(480px,140px)}}
+@keyframes fxBorb2{0%,100%{transform:translate(580px,80px)}30%{transform:translate(510px,120px)}60%{transform:translate(430px,85px)}}
+.band-fx .fx-wl{transform-origin:100% 50%;animation:fxBate .25s ease-in-out infinite alternate}.band-fx .fx-wr{transform-origin:0% 50%;animation:fxBate .25s ease-in-out infinite alternate}
+@keyframes fxBate{to{transform:scaleX(.25)}}
+.band-fx .fx-leaf{transform-box:view-box;opacity:0}
+.band-fx .fx-l1{animation:fxFolha 7s linear infinite}
+.band-fx .fx-l2{animation:fxFolha2 8s linear infinite 2.5s}
+.band-fx .fx-l3{animation:fxFolha 9s linear infinite 5s}
+@keyframes fxFolha{0%{transform:translate(520px,30px) rotate(0);opacity:0}10%{opacity:.9}50%{transform:translate(470px,100px) rotate(160deg)}90%{opacity:.9}100%{transform:translate(500px,175px) rotate(320deg);opacity:0}}
+@keyframes fxFolha2{0%{transform:translate(600px,40px) rotate(20deg);opacity:0}10%{opacity:.9}50%{transform:translate(560px,105px) rotate(-150deg)}90%{opacity:.9}100%{transform:translate(590px,175px) rotate(-300deg);opacity:0}}
+.band-fx .fx-bird{transform-box:view-box}
+.band-fx .fx-br1{animation:fxPassaro 16s linear infinite}
+.band-fx .fx-br2{animation:fxPassaro 16s linear infinite -1.2s}
+.band-fx .fx-br3{animation:fxPassaro 16s linear infinite -2.2s}
+@keyframes fxPassaro{0%{transform:translate(620px,64px)}100%{transform:translate(320px,48px)}}
+/* fins de semana: van na estrada, avião, fumaça da chaminé e brilhos */
+.band-fx .fx-road{animation:fxEstrada 1.2s linear infinite}
+@keyframes fxEstrada{to{stroke-dashoffset:-26}}
+.band-fx .fx-van{transform-box:view-box;animation:fxVan 9s ease-in-out infinite}
+@keyframes fxVan{0%{transform:translate(300px,0)}45%,55%{transform:translate(560px,-2px)}100%{transform:translate(300px,0)}}
+.band-fx .fx-van rect,.band-fx .fx-van circle{animation:none}
+.band-fx .fx-plane{transform-box:view-box;animation:fxAviao 10s ease-in-out infinite}
+@keyframes fxAviao{0%{transform:translate(340px,98px) rotate(-14deg);opacity:0}10%{opacity:1}80%{transform:translate(580px,58px) rotate(-14deg);opacity:1}90%,100%{transform:translate(620px,50px) rotate(-14deg);opacity:0}}
+.band-fx .fx-trail{stroke-dasharray:6 7;animation:fxRastro 1.5s linear infinite}
+@keyframes fxRastro{to{stroke-dashoffset:-26}}
+.band-fx .fx-smoke{animation:fxFumaca 3.6s ease-out infinite}
+.band-fx .fx-sm2{animation-delay:1.2s}.band-fx .fx-sm3{animation-delay:2.4s}
+@keyframes fxFumaca{0%{transform:translate(0,0) scale(.5);opacity:0}20%{opacity:.85}100%{transform:translate(-22px,-46px) scale(1.6);opacity:0}}
+.band-fx .fx-spk{animation:fxBrilha 2.4s ease-in-out infinite}
+.band-fx .fx-sp2 .fx-spk{animation-delay:.6s}.band-fx .fx-sp3 .fx-spk{animation-delay:1.2s}.band-fx .fx-sp4 .fx-spk{animation-delay:1.8s}
+@keyframes fxBrilha{0%,100%{transform:scale(.2) rotate(0);opacity:0}50%{transform:scale(1) rotate(90deg);opacity:1}}
+/* passeios: balões, rota que se desenha e pino */
+.band-fx .fx-route{stroke-dasharray:7 8;animation:fxRota 2s linear infinite}
+@keyframes fxRota{to{stroke-dashoffset:-30}}
+.band-fx .fx-pin-b{animation:fxPino 1.8s ease-in-out infinite}
+@keyframes fxPino{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}60%{transform:translateY(0) scaleY(.9)}}
+.band-fx .fx-balloon{animation:fxBalao 6s ease-in-out infinite}
+.band-fx .fx-bal2{animation-duration:7.5s;animation-delay:-2s}
+@keyframes fxBalao{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-12px)}}
+@media (max-width:640px){.band-box > .band-fx{inset:auto 0 0 0;height:150px;opacity:.8}}
+@media (prefers-reduced-motion: reduce){.band-fx,.band-fx *{animation:none !important}.band-fx .fx-dolphin,.band-fx .fx-leaf{opacity:0}}
