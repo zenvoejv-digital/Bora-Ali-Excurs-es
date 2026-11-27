@@ -40,11 +40,11 @@
   }
 
   var CATEGORIAS = [
-    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#DCEBFA', tileInk: '#0A4D8C', anim: 'r-zoom' , tileGrad: 'linear-gradient(155deg,#DCEBFA 0%,#F7E4C8 62%,#F2C98E 100%)', tileAcc: '#C8913A' },
-    { id: 'praias', key: 'praia', kicker: 'BATE E VOLTA', title: 'Praias', subtitle: 'Litoral paulista e Rio de Janeiro', band: '#1B8EDB', bandInk: '#06284D', tileBg: '#E2F1FC', tileInk: '#0A6BB0', anim: 'r-up' , tileGrad: 'linear-gradient(180deg,#CDEEFF 0%,#A9E0F5 48%,#FBE6A8 100%)', tileAcc: '#1B8EDB' },
-    { id: 'parques', key: 'parques', kicker: 'DIVERSÃO GARANTIDA', title: 'Parques e águas termais', subtitle: 'Brinquedos, piscinas e muita risada', band: '#F47B20', bandInk: '#06284D', tileBg: '#FFEADB', tileInk: '#B4520A', anim: 'r-pop' , tileGrad: 'linear-gradient(160deg,#FFF1D0 0%,#C7F0EA 52%,#9FE3D6 100%)', tileAcc: '#14A39A' },
-    { id: 'natureza', key: 'natureza', kicker: 'SERRA E MONTANHA', title: 'Natureza', subtitle: 'Mirantes, flores e ar puro', band: '#06284D', bandInk: '#FFFFFF', tileBg: '#E7EEF6', tileInk: '#06284D', anim: 'r-left' , tileGrad: 'linear-gradient(160deg,#FFF0C2 0%,#D8F0BE 50%,#A9DB8C 100%)', tileAcc: '#4E9A2E' },
-    { id: 'passeios', key: 'passeios', kicker: 'CULTURA, FÉ E COMPRAS', title: 'Passeios', subtitle: 'Zoológico, Aparecida, Serra Negra e mais', band: '#FFF1E6', bandInk: '#06284D', tileBg: '#FFF1E6', tileInk: '#B4520A', anim: 'r-flip' , tileGrad: 'linear-gradient(160deg,#FFE9C4 0%,#EFE3B5 45%,#BFE0B0 100%)', tileAcc: '#B8862C' }
+    { id: 'fins-de-semana', key: 'fds', kicker: 'VIAGENS DE 2 A 4 DIAS', title: 'Fins de semana', subtitle: 'Mais tempo para aproveitar cada destino', band: '#0A4D8C', bandInk: '#FFFFFF', tileBg: '#DCEBFA', tileInk: '#0A4D8C', anim: 'r-zoom' , tileGrad: 'linear-gradient(155deg,#DCEBFA 0%,#F7E4C8 62%,#F2C98E 100%)', tileAcc: '#C8913A' , bandGrad: 'linear-gradient(100deg,#DCEBFA 0%,#F7E4C8 60%,#F2C98E 100%)', bandKicker: '#8A5A12' },
+    { id: 'praias', key: 'praia', kicker: 'BATE E VOLTA', title: 'Praias', subtitle: 'Litoral paulista e Rio de Janeiro', band: '#1B8EDB', bandInk: '#06284D', tileBg: '#E2F1FC', tileInk: '#0A6BB0', anim: 'r-up' , tileGrad: 'linear-gradient(180deg,#CDEEFF 0%,#A9E0F5 48%,#FBE6A8 100%)', tileAcc: '#1B8EDB' , bandGrad: 'linear-gradient(100deg,#CDEEFF 0%,#A9E0F5 55%,#FBE6A8 100%)', bandKicker: '#0A6BB0' },
+    { id: 'parques', key: 'parques', kicker: 'DIVERSÃO GARANTIDA', title: 'Parques e águas termais', subtitle: 'Brinquedos, piscinas e muita risada', band: '#F47B20', bandInk: '#06284D', tileBg: '#FFEADB', tileInk: '#B4520A', anim: 'r-pop' , tileGrad: 'linear-gradient(160deg,#FFF1D0 0%,#C7F0EA 52%,#9FE3D6 100%)', tileAcc: '#14A39A' , bandGrad: 'linear-gradient(100deg,#FFF1D0 0%,#C7F0EA 55%,#9FE3D6 100%)', bandKicker: '#0D7A73' },
+    { id: 'natureza', key: 'natureza', kicker: 'SERRA E MONTANHA', title: 'Natureza', subtitle: 'Mirantes, flores e ar puro', band: '#06284D', bandInk: '#FFFFFF', tileBg: '#E7EEF6', tileInk: '#06284D', anim: 'r-left' , tileGrad: 'linear-gradient(160deg,#FFF0C2 0%,#D8F0BE 50%,#A9DB8C 100%)', tileAcc: '#4E9A2E' , bandGrad: 'linear-gradient(100deg,#FFF0C2 0%,#D8F0BE 55%,#A9DB8C 100%)', bandKicker: '#2F6E16' },
+    { id: 'passeios', key: 'passeios', kicker: 'CULTURA, FÉ E COMPRAS', title: 'Passeios', subtitle: 'Zoológico, Aparecida, Serra Negra e mais', band: '#FFF1E6', bandInk: '#06284D', tileBg: '#FFF1E6', tileInk: '#B4520A', anim: 'r-flip' , tileGrad: 'linear-gradient(160deg,#FFE9C4 0%,#EFE3B5 45%,#BFE0B0 100%)', tileAcc: '#B8862C' , bandGrad: 'linear-gradient(100deg,#FFE9C4 0%,#EFE3B5 50%,#BFE0B0 100%)', bandKicker: '#8A5A12' }
   ];
 
   var PAGAMENTOS = [
@@ -211,12 +211,13 @@
       var cards = list.map(function (v) { return cardHTML(v, c); }).join('');
       var empty = list.length ? '' : '<p style="margin: 0; font-size: 15px; color: #55657A; background: #EEF5FC; border-radius: 16px; padding: 16px 18px">Sem saídas desta categoria no mês escolhido. Troque o mês lá em cima ou chame a gente no WhatsApp.</p>';
       return '<section id="' + c.id + '" style="max-width: 1240px; margin: 0 auto; padding: 64px 24px 8px; display: flex; flex-direction: column; gap: 24px; scroll-margin-top: 80px">' +
-        '<div style="background: ' + c.band + '; color: ' + c.bandInk + '; border-radius: 28px; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 0 clamp(24px, 4vw, 44px); min-height: 170px">' +
+        '<div style="background: ' + c.bandGrad + '; color: #06284D; border-radius: 28px; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 0 clamp(16px, 3vw, 36px) 0 clamp(24px, 4vw, 44px); min-height: 170px">' +
         '<div style="flex: 999 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 28px 0">' +
-        '<span style="font-size: 13px; font-weight: 700; letter-spacing: 1.5px; opacity: 0.9">' + esc(c.kicker) + '</span>' +
+        '<span style="font-size: 13px; font-weight: 800; letter-spacing: 1.5px; color: ' + c.bandKicker + '">' + esc(c.kicker) + '</span>' +
         '<h2 style="font-family: \'Poppins\', sans-serif; margin: 0; font-weight: 700; font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1">' + esc(c.title) + '</h2>' +
-        '<span style="font-size: 16px; opacity: 0.92">' + esc(c.subtitle) + '</span></div>' +
-        '<div style="flex: 1 1 260px; max-width: 320px; height: 170px; position: relative">' + (ART.BANDS[c.key] || '') + '</div></div>' +
+        '<span style="font-size: 16px; color: #33445A">' + esc(c.subtitle) + '</span></div>' +
+        '<div style="flex: 0 1 260px; height: 170px; display: flex; align-items: center; justify-content: center; padding: 10px 0">' +
+        '<img class="band-img" src="/assets/img/categorias/' + c.key + '.webp" alt="" width="220" height="160" loading="lazy" decoding="async" style="max-width: 100%; max-height: 150px; width: auto; height: auto; object-fit: contain"></div></div>' +
         '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px">' + cards + '</div>' + empty +
         '</section>';
     }).join('');

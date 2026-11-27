@@ -162,3 +162,7 @@ html,body{overflow-x:clip}
 .tile:hover,.tile:focus-visible{border-color:var(--acc,#F47B20) !important;box-shadow:0 14px 30px -14px var(--acc,#F47B20);transform:translateY(-3px)}
 .tile:hover::after,.tile:focus-visible::after{opacity:1}
 @media (prefers-reduced-motion: reduce){.tile{transition:none}.tile:hover{transform:none}}
+/* faixas das seções: ilustração da categoria sobre o degradê */
+.band-img{animation:bandFlutua 5s ease-in-out infinite;filter:drop-shadow(0 10px 14px rgba(6,40,77,.22))}
+@keyframes bandFlutua{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-1.5deg)}}
+@media (prefers-reduced-motion: reduce){.band-img{animation:none}}
