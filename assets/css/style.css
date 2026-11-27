@@ -278,3 +278,7 @@ html,body{overflow-x:clip}
 .footer-bg > *{position:relative;z-index:1}
 /* faixas das seções na largura total, iguais ao banner */
 .band-box{margin-left:calc(50% - 50vw) !important;margin-right:calc(50% - 50vw) !important;border-radius:0 !important;padding-left:clamp(24px,4vw,64px) !important;padding-right:clamp(16px,2.5vw,48px) !important;min-height:190px !important}
+/* todas as seções até o limite do site, nas mesmas pontas do banner */
+[style*="max-width: 1240px"]{max-width:none !important}
+#destinos,#trip-sections > section,#como-funciona,#embarques,#contato,[style*="max-width: 1240px"][style*="padding: 16px 24px 0"],[style*="max-width: 1240px"][style*="padding: 10px 24px"]{padding-left:clamp(24px,4vw,64px) !important;padding-right:clamp(24px,4vw,64px) !important}
+.band-box{margin-left:calc(-1 * clamp(24px,4vw,64px)) !important;margin-right:calc(-1 * clamp(24px,4vw,64px)) !important}
