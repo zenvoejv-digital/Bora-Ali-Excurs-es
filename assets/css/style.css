@@ -264,3 +264,8 @@ html,body{overflow-x:clip}
 #inicio > .hero-bg{padding-left:clamp(24px,4vw,64px) !important;padding-right:clamp(24px,4vw,64px) !important}
 #inicio > .hero-bg > .hero-art{right:clamp(16px,2.5vw,48px) !important}
 @media (max-width:860px){#inicio > .hero-bg > .hero-art{right:50% !important}}
+/* fundo do site no azul do banner */
+.page-bg{background:#0B5BB5 !important}
+.on-blue{color:#FFFFFF !important}
+.on-blue-soft{color:#DCE9F7 !important}
+.on-blue-kicker{color:#FFC08A !important}
