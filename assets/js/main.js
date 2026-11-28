@@ -32,6 +32,13 @@
     CONFIG.linkAvaliacao = CONFIG.linkAvaliacao || 'https://www.google.com/search?q=Bora+Ali+Excurs%C3%B5es+Salto';
     var demoVagas = { 'olimpia-jan-30': [46, 46], 'ilhabela-jan-02': [46, 40], 'hopi-hari-jan-16': [46, 45], 'campos-do-jordao-fev-21': [46, 42] };
     VIAGENS.forEach(function (v) { if (demoVagas[v.id]) { v.vagas = demoVagas[v.id][0]; ocupadas[v.id] = demoVagas[v.id][1]; } });
+    // fotos de exemplo (no site real, vêm das colunas "foto 1" a "foto 5" da aba Agenda)
+    VIAGENS.forEach(function (v) {
+      if (v.id === 'ilhabela-jan-02') {
+        v.fotos = [1, 2, 3].map(function (n) { return location.origin + '/assets/img/demo/exemplo-' + n + '.svg'; });
+        v.descricao = 'Exemplo de descrição: saída de madrugada, dia livre na praia e retorno no fim da tarde. Fotos de exemplo; as reais entram pela planilha.';
+      }
+    });
     var aviso = document.createElement('div');
     aviso.setAttribute('role', 'note');
     aviso.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:40;background:#FFE2C4;color:#7A3608;font:800 13px Inter,sans-serif;letter-spacing:.5px;padding:10px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(6,40,77,.2)';
@@ -191,16 +198,23 @@
     var botao = esgotado
       ? '<button type="button" class="btn" data-espera="' + idx + '" aria-label="Entrar na lista de espera de ' + esc(v.destino) + '" style="font-family: inherit; cursor: pointer; background: #FFFFFF; border: 2px solid #0A4D8C; color: #0A4D8C; font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 999px; min-height: 44px; display: inline-flex; align-items: center">Lista de espera</button>'
       : '<button type="button" class="btn" data-reservar="' + idx + '" aria-label="Reservar ' + esc(v.destino) + ' em ' + esc(v.data) + '" style="font-family: inherit; border: none; cursor: pointer; background: #F47B20; color: #06284D; font-weight: 700; font-size: 15px; padding: 10px 18px; border-radius: 999px; min-height: 44px; display: inline-flex; align-items: center">Reservar</button>';
+    var fotos = v.fotos || [];
+    var topo = fotos.length
+      ? '<button type="button" class="card-foto" data-fotos="' + idx + '" aria-label="Ver ' + (fotos.length === 1 ? 'a foto' : 'as ' + fotos.length + ' fotos') + ' de ' + esc(v.destino) + '">' +
+        '<img class="foto-viagem" src="' + esc(fotos[0]) + '" data-cena="' + esc(v.cena) + '" alt="" loading="lazy" decoding="async"></button>' +
+        '<span class="card-foto-n" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"></rect><circle cx="12" cy="13" r="3.5"></circle><path d="M8 6l1.5-2h5L16 6"></path></svg>' + fotos.length + '</span>'
+      : (ART.SCENES[v.cena] || GENERIC_SCENE);
+    var local = v.local ? '<span style="display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #0A4D8C"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>' + esc(v.local) + '</span>' : '';
     return '<article class="card ' + cat.anim + '" style="border: 1px solid #E4EDF6; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; background: #FFFFFF">' +
-      '<div style="position: relative; height: 128px; background: #E2F1FC; overflow: hidden">' + (ART.SCENES[v.cena] || GENERIC_SCENE) +
-      '<div style="position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px">' +
+      '<div class="card-topo' + (fotos.length ? ' tem-foto' : '') + '" style="position: relative; height: ' + (fotos.length ? 176 : 128) + 'px; background: #E2F1FC; overflow: hidden">' + topo +
+      '<div style="position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none">' +
       '<span style="display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #0A4D8C; box-shadow: 0 2px 8px rgba(6,40,77,0.15); font-weight: 700; font-size: 14px; padding: 7px 12px; border-radius: 999px">' +
       '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>' +
       esc(v.data) + ' · ' + esc(v.dia) + '</span>' + badge + '</div></div>' +
       '<div style="padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1">' +
       '<div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1">' +
       '<h3 style="font-family: \'Poppins\', sans-serif; margin: 0; font-weight: 600; font-size: 21px; color: #0F1B2D">' + esc(v.destino) + '</h3>' +
-      '<span style="font-size: 14px; color: #55657A">' + esc(v.obs) + '</span>' + aviso + '</div>' +
+      local + '<span style="font-size: 14px; color: #55657A">' + esc(v.obs) + '</span>' + aviso + '</div>' +
       '<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid #E4EDF6; padding-top: 14px">' +
       '<div style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-size: 12px; font-weight: 600; color: #55657A">por pessoa</span>' +
       '<span style="font-family: \'Poppins\', sans-serif; font-weight: 700; font-size: 22px; color: #0A4D8C; white-space: nowrap">' + brl(v.valor) + '</span></div>' +
@@ -246,7 +260,8 @@
 
   // cidades de embarque
   function opcoesEmbarque(sel) {
-    return '<option value="">Selecione</option>' + (CONFIG.cidadesEmbarque || []).map(function (c) {
+    var lista = (viagemAtual && viagemAtual.embarques && viagemAtual.embarques.length) ? viagemAtual.embarques : (CONFIG.cidadesEmbarque || []);
+    return '<option value="">Selecione</option>' + lista.map(function (c) {
       return '<option value="' + esc(c) + '"' + (c === sel ? ' selected' : '') + '>' + esc(c) + '</option>';
     }).join('');
   }
@@ -278,34 +293,36 @@
     return a;
   }
   // devolve { valor, rotulo } de um passageiro
+  function anosTxt(n) { return n + (n === 1 ? ' ano' : ' anos'); }
+  function isentaDe(cri) { return cri.isentaAte != null && cri.isentaAte !== '' ? +cri.isentaAte : ((cri.faixas || []).length ? -1 : ISENTA_ATE); }
   function precoPassageiro(v, idade) {
-    var cri = v.criancas || {}, i;
+    var cri = v.criancas || {}, faixas = cri.faixas || [], i;
     if (idade == null || idade < 0) return { valor: v.valor, rotulo: 'preencha a data de nascimento', pendente: true };
-    if (cri.faixas) {
-      for (i = 0; i < cri.faixas.length; i++) {
-        var f = cri.faixas[i];
-        if (idade >= f.de && idade <= f.ate) return { valor: f.valor, rotulo: f.valor ? 'tarifa infantil (' + idade + (idade === 1 ? ' ano' : ' anos') + ')' : 'isento (' + idade + (idade === 1 ? ' ano' : ' anos') + ', no colo)', infantil: true };
-      }
+    if (idade <= isentaDe(cri)) return { valor: 0, rotulo: 'isento (' + anosTxt(idade) + ', no colo)', infantil: true };
+    for (i = 0; i < faixas.length; i++) {
+      var f = faixas[i];
+      if (idade < f.de || idade > f.ate) continue;
+      if (f.percentual != null) return { valor: Math.round(v.valor * (100 - f.percentual)) / 100, rotulo: 'criança com ' + f.percentual + '% de desconto (' + anosTxt(idade) + ')', infantil: true };
+      return { valor: +f.valor || 0, rotulo: +f.valor ? 'tarifa infantil (' + anosTxt(idade) + ')' : 'isento (' + anosTxt(idade) + ')', infantil: true };
     }
-    var isentaAte = cri.isentaAte != null ? cri.isentaAte : ISENTA_ATE;
-    if (!cri.faixas && idade <= isentaAte) return { valor: 0, rotulo: 'isento (' + idade + (idade === 1 ? ' ano' : ' anos') + ', no colo)', infantil: true };
     var dc = CONFIG.descontoCriancas;
-    if (dc && dc.percentual > 0 && idade >= dc.de && idade <= dc.ate) {
+    if (!faixas.length && dc && dc.percentual > 0 && idade >= dc.de && idade <= dc.ate) {
       return { valor: Math.round(v.valor * (100 - dc.percentual)) / 100, rotulo: 'criança com ' + dc.percentual + '% de desconto (' + idade + ' anos)', infantil: true };
     }
     return { valor: v.valor, rotulo: idade < 12 ? 'criança, valor integral (' + idade + ' anos)' : 'valor integral' };
   }
   function regraCriancas(v) {
-    var cri = v.criancas || {};
-    var partes = [];
-    if (cri.faixas) partes.push(cri.aviso || '');
-    else {
-      var ate = cri.isentaAte != null ? cri.isentaAte : ISENTA_ATE;
-      partes.push('Crianças de até ' + ate + ' anos viajam no colo e não pagam.');
-      var dc = CONFIG.descontoCriancas;
-      if (dc && dc.percentual > 0) partes.push('De ' + dc.de + ' a ' + dc.ate + ' anos: ' + dc.percentual + '% de desconto.');
-      if (cri.aviso) partes.push(cri.aviso);
-    }
+    var cri = v.criancas || {}, faixas = cri.faixas || [];
+    var partes = [], ate = isentaDe(cri);
+    if (ate === 0) partes.push('Bebês com menos de 1 ano viajam no colo e não pagam.');
+    else if (ate > 0) partes.push('Crianças de até ' + anosTxt(ate) + ' viajam no colo e não pagam.');
+    faixas.forEach(function (f) {
+      var quem = f.de === f.ate ? 'Com ' + anosTxt(f.de) : 'De ' + f.de + ' a ' + anosTxt(f.ate);
+      partes.push(quem + ': ' + (f.percentual != null ? f.percentual + '% de desconto' : (+f.valor ? brl(+f.valor) : 'não paga')) + '.');
+    });
+    var dc = CONFIG.descontoCriancas;
+    if (!faixas.length && dc && dc.percentual > 0) partes.push('De ' + dc.de + ' a ' + dc.ate + ' anos: ' + dc.percentual + '% de desconto.');
+    if (cri.aviso) partes.push(cri.aviso);
     return partes.filter(Boolean).join(' ') + ' A idade conta no dia do passeio.';
   }
   function precosDaReserva() {
@@ -504,7 +521,11 @@
     $('bk-ok').checked = false; $('bk-news').checked = false;
     clearMessages();
     $('bk-trip-name').textContent = v.destino;
-    $('bk-trip-meta').textContent = v.data + ' · ' + v.dia + ' · ' + v.obs;
+    $('bk-trip-meta').textContent = [v.data, v.dia, v.obs, v.local].filter(Boolean).join(' · ');
+    $('bk-desc').textContent = v.descricao || ''; $('bk-desc').hidden = !v.descricao;
+    $('bk-fotos').hidden = !(v.fotos && v.fotos.length);
+    $('bk-fotos').textContent = v.fotos && v.fotos.length > 1 ? 'Ver as ' + v.fotos.length + ' fotos' : 'Ver a foto';
+    $('bk-emb').innerHTML = opcoesEmbarque($('bk-emb').value);
     $('bk-trip-price').textContent = brl(v.valor);
     $('bk-kids').textContent = regraCriancas(v) + (v.soTransporte ? ' ' + v.soTransporte.aviso : '');
     syncContratanteMenor();
@@ -527,6 +548,8 @@
   }
 
   $('trip-sections').addEventListener('click', function (e) {
+    var g = e.target.closest('[data-fotos]');
+    if (g) { abrirGaleria(VIAGENS[+g.getAttribute('data-fotos')], 0, g); return; }
     var b = e.target.closest('[data-reservar]');
     if (b) { openBooking(VIAGENS[+b.getAttribute('data-reservar')]); return; }
     var w = e.target.closest('[data-espera]');
@@ -938,6 +961,99 @@
   // ---------- link de avaliação no rodapé ----------
   if (CONFIG.linkAvaliacao) { $('link-avaliacao').href = CONFIG.linkAvaliacao; $('link-avaliacao').hidden = false; }
 
+  // ---------- fotos da viagem (até 5, vindas da planilha) ----------
+  // foto do Google Drive que não abrir: tenta o outro endereço do Drive; se nada abrir, volta a ilustração
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || !/\b(foto-viagem|gl-foto)\b/.test(img.className)) return;
+    var m = /googleusercontent\.com\/d\/([\w-]+)/.exec(img.src);
+    if (m && !img.getAttribute('data-tentou')) { img.setAttribute('data-tentou', '1'); img.setAttribute('data-orig', img.src); img.src = 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w1600'; return; }
+    if (/gl-foto/.test(img.className)) {
+      img.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"><rect width="400" height="250" fill="#0A4D8C"/><text x="200" y="132" text-anchor="middle" font-family="Arial" font-size="20" fill="#DCE9F7">Foto indisponível</text></svg>');
+      return;
+    }
+    if (/foto-viagem/.test(img.className)) {
+      var btn = img.closest('.card-foto'), topo = btn && btn.parentNode;
+      var vv = btn && VIAGENS[+btn.getAttribute('data-fotos')];
+      if (vv && vv.fotos) vv.fotos = vv.fotos.filter(function (u) { return u !== img.getAttribute('src') && u.indexOf(img.getAttribute('data-orig') || '\u0000') !== 0; });
+      if (topo) { var n = topo.querySelector('.card-foto-n'); if (n) n.remove(); btn.outerHTML = ART.SCENES[img.getAttribute('data-cena')] || GENERIC_SCENE; topo.style.height = '128px'; }
+    }
+  }, true);
+
+  var gl = document.createElement('div');
+  gl.id = 'galeria'; gl.className = 'galeria'; gl.hidden = true;
+  gl.innerHTML = '<div class="gl-box" role="dialog" aria-modal="true" aria-labelledby="gl-tit">' +
+    '<div class="gl-top"><div style="min-width: 0"><h3 id="gl-tit"></h3><p id="gl-meta"></p></div>' +
+    '<button type="button" class="gl-fechar" data-gl-fechar aria-label="Fechar fotos"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>' +
+    '<div class="gl-palco"><img id="gl-img" class="gl-foto" alt="">' +
+    '<button type="button" class="gl-seta gl-ant" data-gl="-1" aria-label="Foto anterior"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></button>' +
+    '<button type="button" class="gl-seta gl-prox" data-gl="1" aria-label="Próxima foto"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></button>' +
+    '<span id="gl-cont" aria-live="polite"></span></div>' +
+    '<div id="gl-mini" class="gl-mini"></div>' +
+    '<p id="gl-desc"></p>' +
+    '<div class="gl-acoes"><div style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-size: 12px; font-weight: 600; color: #55657A">por pessoa</span><span id="gl-preco"></span></div>' +
+    '<button type="button" id="gl-reservar" class="btn">Reservar</button></div></div>';
+  document.body.appendChild(gl);
+  var glViagem = null, glI = 0, glVolta = null;
+  function mostraFoto(i) {
+    var f = glViagem.fotos, n = f.length;
+    glI = (i + n) % n;
+    var img = $('gl-img'); img.removeAttribute('data-tentou');
+    img.src = f[glI]; img.alt = 'Foto ' + (glI + 1) + ' de ' + n + ' de ' + glViagem.destino;
+    $('gl-cont').textContent = n > 1 ? (glI + 1) + ' / ' + n : '';
+    gl.querySelectorAll('.gl-seta').forEach(function (b) { b.hidden = n < 2; });
+    gl.querySelectorAll('[data-gl-i]').forEach(function (b, k) { b.setAttribute('aria-current', k === glI ? 'true' : 'false'); });
+  }
+  function abrirGaleria(v, i, origem) {
+    if (!v || !v.fotos || !v.fotos.length) return;
+    glViagem = v; glVolta = origem || document.activeElement;
+    $('gl-tit').textContent = v.destino;
+    $('gl-meta').textContent = [v.data, v.dia, v.local].filter(Boolean).join(' · ');
+    $('gl-desc').textContent = v.descricao || ''; $('gl-desc').hidden = !v.descricao;
+    $('gl-preco').textContent = brl(v.valor);
+    var esg = vagasRestantes(v) === 0;
+    $('gl-reservar').textContent = esg ? 'Lista de espera' : 'Reservar';
+    $('gl-mini').innerHTML = v.fotos.length > 1 ? v.fotos.map(function (u, k) {
+      return '<button type="button" data-gl-i="' + k + '" aria-label="Ver foto ' + (k + 1) + '"><img class="gl-foto" src="' + esc(u) + '" alt="" loading="lazy"></button>';
+    }).join('') : '';
+    gl.hidden = false; document.body.classList.add('no-scroll');
+    mostraFoto(i || 0);
+    setTimeout(function () { gl.querySelector('.gl-fechar').focus(); }, 30);
+  }
+  function fecharGaleria() {
+    gl.hidden = true;
+    if (booking.hidden) document.body.classList.remove('no-scroll');
+    if (glVolta && glVolta.focus) glVolta.focus();
+  }
+  gl.addEventListener('click', function (e) {
+    if (e.target === gl || e.target.closest('[data-gl-fechar]')) { fecharGaleria(); return; }
+    var s = e.target.closest('[data-gl]'); if (s) { mostraFoto(glI + +s.getAttribute('data-gl')); return; }
+    var t = e.target.closest('[data-gl-i]'); if (t) { mostraFoto(+t.getAttribute('data-gl-i')); return; }
+    if (e.target.closest('#gl-reservar')) {
+      var v = glViagem; fecharGaleria();
+      if (vagasRestantes(v) === 0) window.open(waReserva() + encodeURIComponent('Olá! A excursão para ' + v.destino + ' (' + v.data + ') está esgotada no site. Quero entrar na lista de espera, caso abra uma vaga.'), '_blank', 'noopener');
+      else if (booking.hidden) openBooking(v);
+    }
+  });
+  gl.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); fecharGaleria(); }
+    else if (e.key === 'ArrowRight') mostraFoto(glI + 1);
+    else if (e.key === 'ArrowLeft') mostraFoto(glI - 1);
+    else if (e.key === 'Tab') {
+      var foc = [].filter.call(gl.querySelectorAll('button'), function (b) { return !b.hidden && b.offsetParent; });
+      var a = foc[0], z = foc[foc.length - 1];
+      if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    }
+  });
+  var toqueX = null;
+  gl.querySelector('.gl-palco').addEventListener('pointerdown', function (e) { toqueX = e.clientX; });
+  gl.querySelector('.gl-palco').addEventListener('pointerup', function (e) {
+    if (toqueX == null) return; var dx = e.clientX - toqueX; toqueX = null;
+    if (Math.abs(dx) > 40 && glViagem.fotos.length > 1) mostraFoto(glI + (dx < 0 ? 1 : -1));
+  });
+  $('bk-fotos').addEventListener('click', function () { abrirGaleria(viagemAtual, 0, this); });
+
   // ---------- agenda e vagas pela planilha ----------
   function slugMes(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
   function carregarPlanilha() {
@@ -947,13 +1063,30 @@
       if (d.ocupadas) ocupadas = d.ocupadas;
       if (d.viagens && d.viagens.length) {
         var meses = [], vistos = {};
+        var base = {};
+        (window.BORA_VIAGENS || []).forEach(function (b) { base[b.id] = b; });
         VIAGENS = d.viagens.map(function (v) {
           var label = String(v.mes || '').trim(), id = slugMes(label);
           if (label && !vistos[id]) { vistos[id] = 1; meses.push({ id: id, label: label }); }
+          var b = base[String(v.id)] || {};
+          var lista = function (x) { return (Array.isArray(x) ? x : []).map(String).filter(Boolean); };
+          var cri = b.criancas;
+          if (v.criancas) {
+            cri = { isentaAte: (v.criancas.isentaAte === '' || v.criancas.isentaAte == null) ? ISENTA_ATE : +v.criancas.isentaAte,
+              faixas: (v.criancas.faixas || []).filter(function (f) { return f && +f.ate >= +f.de; }).map(function (f) {
+                return f.percentual != null ? { de: +f.de, ate: +f.ate, percentual: +f.percentual } : { de: +f.de, ate: +f.ate, valor: +f.valor || 0 };
+              }),
+              aviso: String(v.criancas.aviso || '') };
+          }
           return { id: String(v.id), data: String(v.data), dia: String(v.dia || ''), destino: String(v.destino),
             categoria: String(v.categoria || 'passeios'), valor: Number(v.valor) || 0, obs: String(v.obs || ''),
-            selo: String(v.selo || ''), mes: id, cena: String(v.cena || ''),
-            vagas: (v.vagas === '' || v.vagas == null) ? null : Number(v.vagas) };
+            selo: String(v.selo || ''), mes: id, cena: String(v.cena || b.cena || ''),
+            vagas: (v.vagas === '' || v.vagas == null) ? null : Number(v.vagas),
+            local: v.local !== undefined ? String(v.local || '') : (b.local || ''),
+            embarques: v.embarques !== undefined ? lista(v.embarques) : (b.embarques || []),
+            fotos: lista(v.fotos).filter(function (u) { return /^https:\/\//i.test(u); }).slice(0, 5),
+            descricao: v.descricao !== undefined ? String(v.descricao || '') : (b.descricao || ''),
+            criancas: cri, soTransporte: b.soTransporte };
         });
         MESES = meses;
         if (mesAtual !== 'todos' && !vistos[mesAtual]) mesAtual = 'todos';

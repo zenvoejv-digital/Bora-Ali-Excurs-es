@@ -46,6 +46,22 @@ var VINC_ROTULO = { pai: 'Pai ou mãe', resp: 'Responsável legal', parente: 'Pa
   // quando o próprio contratante é menor: com quem ele viaja
   junto: 'Viaja com o responsável', acomp: 'Viaja com adulto da reserva', sozinho: 'Viaja só com o grupo' };
 var CAB_AGENDA = ['id', 'data', 'dia', 'destino', 'categoria', 'valor', 'obs', 'selo', 'mes', 'cena', 'vagas', 'ativo'];
+// Colunas extras da Agenda (ficam depois de "ativo"). O código acha cada uma pelo nome do cabeçalho.
+// "reservadas" e "restantes" são calculadas sozinhas (não digite nelas).
+var AGENDA_EXTRAS = [
+  { k: 'local', h: 'local', nota: 'Onde fica o passeio (ex.: Ilhabela - SP). Aparece no card do site e na reserva.' },
+  { k: 'embarques', h: 'embarques', nota: 'Pontos de embarque SÓ desta viagem, separados por ponto e vírgula. Ex.: Salto · Rodoviária; Itu · Tenda. Vazio = todos os pontos de sempre.' },
+  { k: 'gratis', h: 'criança grátis até (idade)', nota: 'Até esta idade a criança não paga (no colo). Ex.: 5. Vazio = regra geral do site (até 4 anos).' },
+  { k: 'valoresCrianca', h: 'valores de criança', nota: 'Preço ou desconto por faixa de idade, separados por ponto e vírgula.\nEx.: 5 a 8 = 50%; 9 a 11 = 199,99\nQuem está fora das faixas paga o valor normal.' },
+  { k: 'avisoCrianca', h: 'aviso de criança', nota: 'Texto extra mostrado na reserva. Ex.: Criança acima de 1 metro paga o ingresso do parque.' },
+  { k: 'foto1', h: 'foto 1', nota: 'Até 5 fotos por viagem. Use o menu Bora Ali › Agenda do site › Enviar fotos de uma viagem, ou cole aqui o link da foto (Google Drive compartilhado como "Qualquer pessoa com o link" ou link direto da imagem). A foto 1 vira a capa do card.' },
+  { k: 'foto2', h: 'foto 2' }, { k: 'foto3', h: 'foto 3' }, { k: 'foto4', h: 'foto 4' }, { k: 'foto5', h: 'foto 5' },
+  { k: 'descricao', h: 'descrição', nota: 'O que está incluso, horário aproximado, dicas. Aparece nas fotos e na reserva. Opcional.' },
+  { k: 'reservadas', h: 'reservadas', calc: true, nota: 'Calculado sozinho: passageiros desta viagem na aba Reservas (sem Cancelada e Prazo vencido). Não digite aqui.' },
+  { k: 'restantes', h: 'restantes', calc: true, nota: 'Calculado sozinho: vagas - reservadas. Não digite aqui.' }
+];
+var CATEGORIAS_AGENDA = ['fds', 'praia', 'parques', 'natureza', 'passeios'];
+var PASTA_FOTOS = 'Bora Ali - Fotos do site';
 
 // ---------- menu ----------
 function onOpen() {
@@ -60,6 +76,10 @@ function onOpen() {
     .addItem('Aniversariantes do mês (desconto)', 'atualizarAniversariantes')
     .addItem('Atualizar o painel sozinho todo dia', 'ativarAtualizacaoDiaria')
     .addSeparator()
+    .addSubMenu(SpreadsheetApp.getUi().createMenu('Agenda do site')
+      .addItem('Enviar fotos de uma viagem', 'enviarFotosViagem')
+      .addItem('Duplicar viagem (nova data)', 'duplicarViagem')
+      .addItem('Arrumar a aba Agenda (colunas, listas e contas)', 'arrumarAbaAgenda'))
     .addItem('Gerar lista de embarque', 'gerarListaEmbarque')
     .addItem('Aplicar cores por situação', 'aplicarCoresStatus')
     .addSubMenu(SpreadsheetApp.getUi().createMenu('Menores de idade')
@@ -93,14 +113,14 @@ function configurarPlanilha() {
   if (a.getLastRow() === 0) {
     a.appendRow(CAB_AGENDA);
     a.setFrozenRows(1);
-    a.getRange(1, 1, 1, CAB_AGENDA.length).setFontWeight('bold').setBackground('#F47B20').setFontColor('#06284D');
     var seed = AGENDA_INICIAL;
     a.getRange(2, 1, seed.length, CAB_AGENDA.length).setValues(seed);
     a.getRange('B:B').setNumberFormat('@');
-    a.setColumnWidths(1, CAB_AGENDA.length, 130);
     a.getRange(1, 1).setNote('Cada linha é uma viagem do site. "vagas": total de lugares (vazio = sem controle). ' +
-      '"ativo": escreva "não" para esconder do site. "categoria": fds, praia, parques, natureza ou passeios.');
+      '"ativo": escreva "não" para esconder do site. "categoria": fds, praia, parques, natureza ou passeios. ' +
+      'Nova viagem: preencha data e destino numa linha vazia; o id é criado sozinho.');
   }
+  prepararAbaAgenda_(a);
   criarAbaBusca_();
   SpreadsheetApp.getUi().alert('Pronto! Abas "Buscar", "Reservas" e "Agenda" criadas. Agora publique como App da Web (veja o LEIA-ME).');
 }
@@ -239,21 +259,7 @@ function doGet(e) {
   var ss = SpreadsheetApp.getActive();
   var prm = (e && e.parameter) || {};
   if (prm.acao === 'status') return json_(statusDaReserva_(String(prm.codigo || '')));
-  var viagens = [];
-  var a = ss.getSheetByName(ABA_AGENDA);
-  if (a && a.getLastRow() > 1) {
-    var faixa = a.getRange(2, 1, a.getLastRow() - 1, CAB_AGENDA.length);
-    var brutos = faixa.getValues(), textos = faixa.getDisplayValues();
-    textos.forEach(function (r, n) {
-      var ativo = String(r[11]).trim().toLowerCase();
-      if (!r[0] || ativo === 'não' || ativo === 'nao') return;
-      var o = {};
-      CAB_AGENDA.forEach(function (k, i) { o[k] = r[i]; });
-      o.valor = numero_(brutos[n][5]);
-      o.vagas = brutos[n][10] === '' ? null : numero_(brutos[n][10]);
-      viagens.push(o);
-    });
-  }
+  var viagens = lerLinhasAgenda_().map(viagemParaSite_);
   var ocupadas = {};
   var r = ss.getSheetByName(ABA_RESERVAS);
   if (r && r.getLastRow() > 1) {
@@ -509,16 +515,7 @@ function ativarAtualizacaoDiaria() {
 function atualizarClientesDiario() { atualizarClientes(true); try { atualizarAniversariantes(true); } catch (e) { /* segue */ } }
 
 function lerAgenda_() {
-  var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA);
-  if (!a || a.getLastRow() < 2) return [];
-  var faixa = a.getRange(2, 1, a.getLastRow() - 1, CAB_AGENDA.length), brutos = faixa.getValues(), txt = faixa.getDisplayValues();
-  var out = [];
-  txt.forEach(function (r, n) {
-    var ativo = String(r[11]).trim().toLowerCase();
-    if (!r[0] || ativo === 'não' || ativo === 'nao') return;
-    out.push({ id: r[0], data: r[1], destino: r[3], categoria: r[4], valor: numero_(brutos[n][5]) });
-  });
-  return out;
+  return lerLinhasAgenda_().map(function (v) { return { id: v.id, data: v.data, destino: v.destino, categoria: v.categoria, valor: v.valor }; });
 }
 function cidadeDe_(endereco) { var m = /,\s*([^,]+?)\s*-\s*CEP/i.exec(String(endereco || '')); return m ? m[1] : ''; }
 function brl_(v) { return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
@@ -570,6 +567,8 @@ function json_(o) {
 }
 
 // Agenda inicial (copiada do site). Depois de criada, edite direto na aba "Agenda".
+// colunas extras da semente (local, embarques, criança grátis até, valores de criança, aviso de criança)
+var AGENDA_EXTRAS_INICIAL = {"olimpia-jan-30": ["Olímpia - SP"], "rio-de-janeiro-fev-06": ["Rio de Janeiro - RJ"], "sao-thome-das-letras-fev-27": ["São Thomé das Letras - MG"], "boraceia-bertioga-jan-02": ["Bertioga - SP"], "ilhabela-jan-02": ["Ilhabela - SP"], "ipanema-rj-jan-10": ["Rio de Janeiro - RJ"], "prumirim-jan-24": ["Ubatuba - SP"], "guaruja-fev-02": ["Guarujá - SP"], "copacabana-fev-07": ["Rio de Janeiro - RJ"], "maresias-fev-21": ["São Sebastião - SP"], "hopi-hari-jan-16": ["Vinhedo - SP", "", "", "", "Criança acima de 1 metro paga o ingresso do parque (valor confirmado no WhatsApp)."], "wet-n-wild-jan-17": ["Itupeva - SP", "", 1, "2 a 4 = 99,99; 5 a 6 = 199,99", "A partir de 7 anos, valor normal."], "maeda-fev-02": ["Itu - SP"], "thermas-de-sao-pedro-fev-07": ["São Pedro - SP"], "holambra-jan-24": ["Holambra - SP", "", 5], "extrema-mg-fev-09": ["Extrema - MG"], "campos-do-jordao-fev-21": ["Campos do Jordão - SP"], "zoologico-de-sao-paulo-jan-03": ["São Paulo - SP"], "aparecida-do-norte-jan-10": ["Aparecida - SP"], "serra-negra-jan-17": ["Serra Negra - SP"], "ctn-fev-28": ["São Paulo - SP"]};
 var AGENDA_INICIAL = [
     ["olimpia-jan-30", "30 e 31/01", "Sáb e dom", "Olímpia", "fds", 1200.0, "Com Thermas dos Laranjais", "", "Janeiro", "olimpia", "", "sim"],
     ["rio-de-janeiro-fev-06", "06 a 09/02", "Feriadão", "Rio de Janeiro", "fds", 1200.0, "Fim de semana de Carnaval", "Carnaval", "Fevereiro", "rio", "", "sim"],
@@ -1010,6 +1009,7 @@ function statusDaReserva_(codigo) {
 function onEdit(e) {
   if (!e || !e.range) return;
   var sh = e.range.getSheet();
+  if (sh.getName() === ABA_AGENDA) { try { aoEditarAgenda_(sh, e.range); } catch (er) { /* segue */ } return; }
   if (sh.getName() !== ABA_RESERVAS || e.range.getColumn() > 3 || e.range.getLastColumn() < 3) return;
   var r0 = Math.max(2, e.range.getRow()), r1 = e.range.getLastRow();
   if (r1 < 2) return;
@@ -1184,3 +1184,276 @@ function aplicarCoresStatus() {
   aplicarCoresStatus_(sh);
   SpreadsheetApp.getActive().toast('Cores aplicadas: amarelo = aguardando sinal, azul = sinal pago, verde = pago, vermelho = prazo vencido, cinza = cancelada. Menores ficam em laranja no nome.', 'Bora Ali', 8);
 }
+
+
+// =====================================================================
+// AGENDA DO SITE: viagens, vagas, local, fotos e regras de criança
+// =====================================================================
+function normCab_(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function colLetra_(n) { var s = ''; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+
+// { chave: nº da coluna } lendo o cabeçalho (aceita colunas fora de ordem)
+function mapaAgenda_(a) {
+  var cab = a.getRange(1, 1, 1, Math.max(1, a.getLastColumn())).getDisplayValues()[0].map(normCab_);
+  var m = {};
+  CAB_AGENDA.forEach(function (k) { var i = cab.indexOf(normCab_(k)); if (i >= 0) m[k] = i + 1; });
+  AGENDA_EXTRAS.forEach(function (c) { var i = cab.indexOf(normCab_(c.h)); if (i >= 0) m[c.k] = i + 1; });
+  return m;
+}
+
+// Cria as colunas que faltam, notas, listas de escolha, contas de vagas e cores. Pode rodar quantas vezes quiser.
+function prepararAbaAgenda_(a) {
+  if (!a) return;
+  if (a.getLastRow() === 0) a.appendRow(CAB_AGENDA);
+  var m = mapaAgenda_(a);
+  CAB_AGENDA.forEach(function (k) { if (!m[k]) { a.getRange(1, a.getLastColumn() + 1).setValue(k); } });
+  AGENDA_EXTRAS.forEach(function (c) { if (!m[c.k]) a.getRange(1, a.getLastColumn() + 1).setValue(c.h); });
+  m = mapaAgenda_(a);
+  var ultima = a.getLastColumn();
+  a.setFrozenRows(1);
+  a.getRange(1, 1, 1, ultima).setFontWeight('bold').setBackground('#F47B20').setFontColor('#06284D').setWrap(true);
+  AGENDA_EXTRAS.forEach(function (c) {
+    var cel = a.getRange(1, m[c.k]);
+    if (c.nota) cel.setNote(c.nota);
+    if (c.calc) cel.setBackground('#0A4D8C').setFontColor('#FFFFFF');
+  });
+  // semente das colunas extras (só onde estiver tudo vazio, na 1ª vez)
+  var n = Math.max(0, a.getLastRow() - 1);
+  if (n) {
+    var ids = a.getRange(2, m.id, n, 1).getDisplayValues();
+    ['local', 'embarques', 'gratis', 'valoresCrianca', 'avisoCrianca'].forEach(function (k, j) {
+      var faixa = a.getRange(2, m[k], n, 1), vals = faixa.getValues(), mudou = false;
+      if (vals.some(function (r) { return r[0] !== ''; })) return;
+      ids.forEach(function (r, i) { var e = AGENDA_EXTRAS_INICIAL[r[0]]; if (e && e[j] !== undefined && e[j] !== '') { vals[i][0] = e[j]; mudou = true; } });
+      if (mudou) faixa.setValues(vals);
+    });
+  }
+  // listas de escolha e números
+  var linhas = a.getMaxRows() - 1;
+  a.getRange(2, m.categoria, linhas, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(CATEGORIAS_AGENDA, true).setAllowInvalid(false).setHelpText('fds, praia, parques, natureza ou passeios').build());
+  a.getRange(2, m.ativo, linhas, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(['sim', 'não'], true).setAllowInvalid(false).build());
+  [['vagas', 'Total de lugares no ônibus (ex.: 46). Vazio = não controlar vagas.'], ['gratis', 'Idade (ex.: 5)'], ['valor', 'Preço por pessoa (ex.: 199,99)']].forEach(function (x) {
+    a.getRange(2, m[x[0]], linhas, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireNumberGreaterThanOrEqualTo(0).setAllowInvalid(false).setHelpText(x[1]).build());
+  });
+  a.getRange(2, m.valor, linhas, 1).setNumberFormat('"R$ "#,##0.00');
+  a.getRange(1, m.vagas).setNote('Total de lugares no ônibus (ex.: 46). O site mostra "Restam X vagas" e "Esgotado". Vazio = não controlar.');
+  // contas: reservadas e restantes (fórmula única no cabeçalho, vale para todas as linhas)
+  var A = colLetra_(m.id), V = colLetra_(m.vagas), R = colLetra_(m.reservadas);
+  a.getRange(2, m.reservadas, linhas, 2).clearContent();
+  a.getRange(1, m.reservadas).setFormula('={"reservadas";ARRAYFORMULA(IF(' + A + '2:' + A + '="","",COUNTIFS(' + ABA_RESERVAS + '!D:D,' + A + '2:' + A +
+    ',' + ABA_RESERVAS + '!C:C,"<>Cancelada",' + ABA_RESERVAS + '!C:C,"<>Prazo vencido")))}');
+  a.getRange(1, m.restantes).setFormula('={"restantes";ARRAYFORMULA(IF((' + A + '2:' + A + '="")+(' + V + '2:' + V + '=""),"",' + V + '2:' + V + '-' + R + '2:' + R + '))}');
+  a.getProtections(SpreadsheetApp.ProtectionType.RANGE).forEach(function (p) { if (p.getDescription() === 'Contas da agenda') p.remove(); });
+  a.getRange(1, m.reservadas, a.getMaxRows(), 2).protect().setDescription('Contas da agenda').setWarningOnly(true);
+  // cores: esgotado, poucas vagas, viagem escondida
+  var tudo = a.getRange(2, 1, linhas, ultima), RS = colLetra_(m.restantes), AT = colLetra_(m.ativo);
+  var fInat = '=$' + AT + '2="não"', fEsg = '=AND($' + RS + '2<>"",$' + RS + '2<=0)', fPoucas = '=AND($' + RS + '2<>"",$' + RS + '2<=10)';
+  var regras = a.getConditionalFormatRules().filter(function (r) {
+    var c = r.getBooleanCondition(), f = c && c.getCriteriaValues()[0];
+    return [fInat, fEsg, fPoucas].indexOf(f) < 0;
+  });
+  regras.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(fInat).setBackground('#E6E6E6').setFontColor('#7A7A7A').setRanges([tudo]).build());
+  regras.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(fEsg).setBackground('#FDE2E1').setRanges([tudo]).build());
+  regras.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(fPoucas).setBackground('#FFF1E6').setRanges([tudo]).build());
+  a.setConditionalFormatRules(regras);
+  a.setColumnWidths(1, ultima, 130);
+  for (var f = 1; f <= 5; f++) a.setColumnWidth(m['foto' + f], 180);
+  a.setColumnWidth(m.descricao, 260);
+}
+function arrumarAbaAgenda() {
+  var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA);
+  if (!a) { SpreadsheetApp.getUi().alert('Rode "Preparar planilha (1ª vez)" primeiro.'); return; }
+  prepararAbaAgenda_(a);
+  SpreadsheetApp.getUi().alert('Pronto! A aba Agenda tem as colunas de local, embarques, crianças, 5 fotos e descrição, ' +
+    'listas de escolha, e as contas de "reservadas" e "restantes" por viagem.');
+}
+
+// lê todas as viagens ativas como objetos
+function lerLinhasAgenda_(incluirInativas) {
+  var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA);
+  if (!a || a.getLastRow() < 2) return [];
+  var m = mapaAgenda_(a), nc = a.getLastColumn();
+  var faixa = a.getRange(2, 1, a.getLastRow() - 1, nc), brutos = faixa.getValues(), txt = faixa.getDisplayValues();
+  var out = [];
+  txt.forEach(function (r, n) {
+    var b = brutos[n];
+    function T(k) { return m[k] ? String(r[m[k] - 1]).trim() : ''; }
+    function B(k) { return m[k] ? b[m[k] - 1] : ''; }
+    var ativo = T('ativo').toLowerCase();
+    if (!T('id') || (!incluirInativas && (ativo === 'não' || ativo === 'nao'))) return;
+    var fotos = [];
+    for (var f = 1; f <= 5; f++) { var u = fotoUrl_(B('foto' + f) || T('foto' + f)); if (u) fotos.push(u); }
+    out.push({
+      linha: n + 2, id: T('id'), data: T('data'), dia: T('dia'), destino: T('destino'), categoria: T('categoria'),
+      valor: numero_(B('valor')), obs: T('obs'), selo: T('selo'), mes: T('mes'), cena: T('cena'),
+      vagas: B('vagas') === '' ? null : numero_(B('vagas')), ativo: ativo,
+      local: T('local'), embarques: T('embarques').split(/\s*;\s*|\n+/).filter(String),
+      gratis: B('gratis') === '' ? null : numero_(B('gratis')), valoresCrianca: T('valoresCrianca'), avisoCrianca: T('avisoCrianca'),
+      fotos: fotos, descricao: T('descricao')
+    });
+  });
+  return out;
+}
+
+// "5 a 8 = 50%; 9 a 11 = 199,99; 3 = 0" -> faixas
+function faixasCrianca_(t) {
+  var out = [];
+  String(t || '').split(/[;\n]+/).forEach(function (p) {
+    var m = /^\s*(\d{1,2})\s*(?:(?:a|até|ate|-)\s*(\d{1,2}))?\s*(?:anos?)?\s*[=:]\s*(?:R\$\s*)?([\d.,]+)\s*(%?)\s*$/i.exec(p);
+    if (!m) return;
+    var de = +m[1], ate = m[2] ? +m[2] : de;
+    if (ate < de) { var x = de; de = ate; ate = x; }
+    if (m[4]) out.push({ de: de, ate: ate, percentual: Math.min(100, numero_(m[3])) });
+    else out.push({ de: de, ate: ate, valor: numero_(m[3]) });
+  });
+  return out;
+}
+
+// o que vai para o site (sem dados pessoais)
+function viagemParaSite_(v) {
+  var o = { id: v.id, data: v.data, dia: v.dia, destino: v.destino, categoria: v.categoria, valor: v.valor, obs: v.obs, selo: v.selo,
+    mes: v.mes, cena: v.cena, vagas: v.vagas, local: v.local, embarques: v.embarques, fotos: v.fotos, descricao: v.descricao };
+  var faixas = faixasCrianca_(v.valoresCrianca);
+  if (v.gratis != null || faixas.length || v.avisoCrianca) o.criancas = { isentaAte: v.gratis, faixas: faixas, aviso: v.avisoCrianca };
+  return o;
+}
+
+// link do Google Drive (ou link direto) -> endereço de imagem que o site consegue mostrar
+function fotoUrl_(x) {
+  if (x && typeof x === 'object') {
+    try { x = (x.getUrl && x.getUrl()) || (x.getContentUrl && x.getContentUrl()) || ''; } catch (e) { x = ''; }
+  }
+  var t = String(x || '').trim();
+  if (!t) return '';
+  var id = (/\/file\/d\/([\w-]{20,})/.exec(t) || /[?&]id=([\w-]{20,})/.exec(t) || /googleusercontent\.com\/d\/([\w-]{20,})/.exec(t) || [])[1];
+  if (/drive\.google\.com|docs\.google\.com|googleusercontent\.com\/d\//.test(t) && id) return 'https://lh3.googleusercontent.com/d/' + id + '=w1600';
+  if (/^https:\/\/\S+$/i.test(t)) return t;
+  return '';
+}
+
+// id sozinho: ao preencher data e destino numa linha nova
+function slugId_(t) { return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+var MES_CURTO_ = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+var MES_NOME_ = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+function novoIdViagem_(destino, data, existentes) {
+  var d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(String(data || ''));
+  var base = slugId_(destino) + (d ? '-' + MES_CURTO_[(+d[2] - 1) % 12] + '-' + ('0' + d[1]).slice(-2) : '');
+  var id = base, k = 2;
+  while (existentes[id]) id = base + '-' + (k++);
+  return id;
+}
+function aoEditarAgenda_(a, faixa) {
+  if (faixa.getLastRow() < 2) return;
+  var m = mapaAgenda_(a);
+  if (!m.id || !m.destino || !m.data) return;
+  var r0 = Math.max(2, faixa.getRow()), n = faixa.getLastRow() - r0 + 1;
+  var nc = a.getLastColumn(), linhas = a.getRange(r0, 1, n, nc).getDisplayValues();
+  var existentes = {};
+  a.getRange(2, m.id, a.getLastRow() - 1, 1).getDisplayValues().forEach(function (r) { if (r[0]) existentes[r[0]] = 1; });
+  linhas.forEach(function (r, i) {
+    var lin = r0 + i, destino = r[m.destino - 1], data = r[m.data - 1];
+    if (r[m.id - 1] || !destino || !data) return;
+    var id = novoIdViagem_(destino, data, existentes);
+    existentes[id] = 1;
+    a.getRange(lin, m.id).setValue(id);
+    if (m.ativo && !r[m.ativo - 1]) a.getRange(lin, m.ativo).setValue('sim');
+    var d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(data);
+    if (m.mes && !r[m.mes - 1] && d) a.getRange(lin, m.mes).setValue(MES_NOME_[(+d[2] - 1) % 12]);
+    SpreadsheetApp.getActive().toast('Viagem "' + destino + '" criada (id ' + id + '). Ela já aparece no site.', 'Bora Ali', 5);
+  });
+}
+
+// ---------- duplicar viagem (mesmo destino em outra data) ----------
+function duplicarViagem() {
+  var ui = SpreadsheetApp.getUi();
+  var v = escolherViagem_('Duplicar viagem');
+  if (!v) return;
+  var resp = ui.prompt('Nova data para ' + v.destino, 'Como aparece no site. Ex.: 14/03 ou 20 e 21/03', ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK || !resp.getResponseText().trim()) return;
+  var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA), m = mapaAgenda_(a);
+  var orig = lerLinhasAgenda_(true).filter(function (x) { return x.id === v.id; })[0];
+  if (!orig) return;
+  var nc = a.getLastColumn(), linha = a.getRange(orig.linha, 1, 1, nc).getValues()[0];
+  var existentes = {}; lerLinhasAgenda_(true).forEach(function (x) { existentes[x.id] = 1; });
+  var data = resp.getResponseText().trim(), d = /(\d{1,2})(?:\D+\d{1,2})?\/(\d{1,2})/.exec(data);
+  linha[m.id - 1] = novoIdViagem_(orig.destino, data, existentes);
+  linha[m.data - 1] = data;
+  if (d && m.mes) linha[m.mes - 1] = MES_NOME_[(+d[2] - 1) % 12];
+  if (m.dia) linha[m.dia - 1] = '';
+  if (m.ativo) linha[m.ativo - 1] = 'sim';
+  if (m.reservadas) { linha[m.reservadas - 1] = ''; linha[m.restantes - 1] = ''; }
+  var nova = a.getLastRow() + 1;
+  a.getRange(nova, 1, 1, nc).setValues([linha]);
+  a.getRange(nova, m.data).setNumberFormat('@').setValue(data);
+  a.setActiveRange(a.getRange(nova, m.dia || m.data));
+  ui.alert('Pronto! Criei a linha ' + nova + ' com ' + orig.destino + ' em ' + data + ' (mesmo valor, local, fotos e regras de criança). ' +
+    'Confira o dia da semana e as vagas.');
+}
+
+// ---------- enviar fotos do computador ----------
+function enviarFotosViagem() {
+  var viagens = lerLinhasAgenda_(true).map(function (v) {
+    return { id: v.id, nome: v.destino + ' — ' + v.data, fotos: v.fotos.length };
+  });
+  if (!viagens.length) { SpreadsheetApp.getUi().alert('A aba Agenda está vazia.'); return; }
+  var t = HtmlService.createTemplate(HTML_FOTOS_);
+  t.viagens = JSON.stringify(viagens).replace(/</g, '\\u003c');
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(520).setHeight(560), 'Fotos da viagem no site');
+}
+// chamada pela janela de envio (não renomeie: o nome não pode terminar com _)
+function salvarFotosViagem(id, arquivos, substituir) {
+  if (!arquivos || !arquivos.length) return { ok: false, msg: 'Escolha pelo menos uma foto.' };
+  var a = SpreadsheetApp.getActive().getSheetByName(ABA_AGENDA), m = mapaAgenda_(a);
+  var v = lerLinhasAgenda_(true).filter(function (x) { return x.id === id; })[0];
+  if (!v) return { ok: false, msg: 'Viagem não encontrada.' };
+  var cols = [1, 2, 3, 4, 5].map(function (f) { return m['foto' + f]; });
+  var atuais = cols.map(function (c) { return a.getRange(v.linha, c).getDisplayValue(); });
+  if (substituir) atuais = ['', '', '', '', ''];
+  var livres = []; atuais.forEach(function (x, i) { if (!x) livres.push(i); });
+  if (!livres.length) return { ok: false, msg: 'Esta viagem já tem 5 fotos. Marque "Trocar as fotos atuais" ou apague uma na planilha.' };
+  var it = DriveApp.getFoldersByName(PASTA_FOTOS), pasta = it.hasNext() ? it.next() : DriveApp.createFolder(PASTA_FOTOS);
+  var postas = 0, aviso = '';
+  arquivos.slice(0, livres.length).forEach(function (arq, k) {
+    var blob = Utilities.newBlob(Utilities.base64Decode(arq.b64), arq.tipo || 'image/jpeg', v.id + '-' + (livres[k] + 1) + '-' + Date.now() + '.jpg');
+    var file = pasta.createFile(blob);
+    try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }
+    catch (e) { aviso = ' Atenção: o Google não deixou compartilhar as fotos por link; abra a pasta "' + PASTA_FOTOS + '" no Drive e compartilhe como "Qualquer pessoa com o link".'; }
+    atuais[livres[k]] = 'https://drive.google.com/file/d/' + file.getId() + '/view';
+    postas++;
+  });
+  cols.forEach(function (c, i) { a.getRange(v.linha, c).setValue(atuais[i]); });
+  var sobra = arquivos.length - postas;
+  return { ok: true, msg: postas + (postas === 1 ? ' foto colocada' : ' fotos colocadas') + ' em ' + v.destino + '. Ao recarregar o site, ' + (postas === 1 ? 'ela já aparece' : 'elas já aparecem') + '.' + (sobra > 0 ? ' ' + sobra + ' ficaram de fora (máximo de 5 por viagem).' : '') + aviso };
+}
+var HTML_FOTOS_ = '<!DOCTYPE html><html><head><base target="_top"><style>' +
+  'body{font-family:Arial,sans-serif;color:#0F1B2D;margin:0;padding:4px 6px;font-size:14px}label{font-weight:bold;display:block;margin:14px 0 6px}' +
+  'select,input[type=file]{width:100%;font-size:14px;padding:8px;box-sizing:border-box}.dica{color:#55657A;font-size:12px;margin-top:4px}' +
+  '#prev{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}#prev img{width:86px;height:86px;object-fit:cover;border-radius:8px;border:1px solid #DDE6F0}' +
+  'button{background:#F47B20;color:#06284D;border:none;border-radius:999px;padding:12px 22px;font-weight:bold;font-size:15px;cursor:pointer;margin-top:16px}' +
+  'button:disabled{opacity:.5;cursor:default}#msg{margin-top:12px;font-weight:bold}.ok{color:#1E5B37}.erro{color:#B42318}' +
+  '</style></head><body>' +
+  '<label for="v">Viagem</label><select id="v"></select>' +
+  '<label for="f">Fotos (até 5)</label><input id="f" type="file" accept="image/*" multiple>' +
+  '<div class="dica">Fotos na horizontal ficam melhores. Elas são reduzidas sozinhas antes de enviar. A 1ª vira a capa do card.</div>' +
+  '<div id="prev"></div>' +
+  '<label style="font-weight:normal"><input type="checkbox" id="trocar"> Trocar as fotos atuais desta viagem</label>' +
+  '<button id="ir" disabled>Enviar para o site</button><div id="msg" role="status"></div>' +
+  '<script>var V=<?!= viagens ?>;var sel=document.getElementById("v");' +
+  'V.forEach(function(x){var o=document.createElement("option");o.value=x.id;o.textContent=x.nome+(x.fotos?" ("+x.fotos+" foto"+(x.fotos>1?"s":"")+")":"");sel.appendChild(o);});' +
+  'var prontos=[];function reduz(file){return new Promise(function(ok,erro){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){' +
+  'var M=1600,w=im.width,h=im.height,k=Math.min(1,M/Math.max(w,h));var c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);' +
+  'c.getContext("2d").drawImage(im,0,0,c.width,c.height);var u=c.toDataURL("image/jpeg",0.85);ok({url:u,b64:u.split(",")[1],tipo:"image/jpeg"});};' +
+  'im.onerror=function(){erro("Não consegui abrir "+file.name)};im.src=r.result;};r.onerror=erro;r.readAsDataURL(file);});}' +
+  'document.getElementById("f").onchange=function(){var fs=[].slice.call(this.files,0,5);var p=document.getElementById("prev");p.innerHTML="";prontos=[];' +
+  'document.getElementById("ir").disabled=true;document.getElementById("msg").textContent=fs.length?"Preparando...":"";' +
+  'Promise.all(fs.map(reduz)).then(function(l){prontos=l;l.forEach(function(x){var i=document.createElement("img");i.src=x.url;i.alt="";p.appendChild(i);});' +
+  'document.getElementById("msg").textContent=this.files&&this.files.length>5?"Só as 5 primeiras serão enviadas.":"";document.getElementById("ir").disabled=!l.length;}.bind(this))' +
+  '.catch(function(e){document.getElementById("msg").textContent=String(e);});};' +
+  'document.getElementById("ir").onclick=function(){var b=this,msg=document.getElementById("msg");b.disabled=true;msg.className="";msg.textContent="Enviando...";' +
+  'google.script.run.withSuccessHandler(function(r){msg.className=r.ok?"ok":"erro";msg.textContent=r.msg;b.disabled=!r.ok;})' +
+  '.withFailureHandler(function(e){msg.className="erro";msg.textContent="Não deu certo: "+e.message;b.disabled=false;})' +
+  '.salvarFotosViagem(sel.value,prontos.map(function(x){return{b64:x.b64,tipo:x.tipo}}),document.getElementById("trocar").checked);};' +
+  '</script></body></html>';

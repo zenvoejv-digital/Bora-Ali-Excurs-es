@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><defs><linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FB3F0"/><stop offset="1" stop-color="#BDE6FB"/></linearGradient><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A8FD6"/><stop offset="1" stop-color="#0B5BB5"/></linearGradient></defs>
+<rect width="1600" height="1000" fill="url(#c)"/><circle cx="1250" cy="230" r="110" fill="#FFD36B"/>
+<path d="M0 560 Q260 360 520 520 T1000 470 T1600 520 V640 H0Z" fill="#2E8B57"/><path d="M0 600 Q300 470 640 590 T1600 560 V660 H0Z" fill="#1F6B42"/>
+<rect y="620" width="1600" height="200" fill="url(#m)"/><path d="M0 660 Q200 640 400 660 T800 660 T1200 660 T1600 660" stroke="#BDE6FB" stroke-width="6" fill="none" opacity=".6"/>
+<path d="M0 800 Q400 760 800 790 T1600 780 V1000 H0Z" fill="#F4D9A6"/>
+<g transform="translate(980 640)"><path d="M0 0 H180 L150 34 H24Z" fill="#fff"/><path d="M84 0 V-110 L150 -6Z" fill="#fff"/><path d="M80 0 V-90 L30 -6Z" fill="#F47B20"/></g>
+<g font-family="Inter,Arial,sans-serif"><rect x="40" y="910" width="760" height="56" rx="28" fill="rgba(6,40,77,.55)"/><text x="72" y="947" font-size="28" font-weight="700" fill="#fff">Foto de exemplo · as reais entram pela planilha</text></g></svg>

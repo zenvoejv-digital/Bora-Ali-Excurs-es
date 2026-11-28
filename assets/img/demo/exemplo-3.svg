@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000"><rect width="1600" height="1000" fill="#BDE6FB"/>
+<rect y="0" width="1600" height="420" fill="#1A8FD6"/><path d="M0 420 Q400 380 800 420 T1600 410 V560 H0Z" fill="#4FB3F0"/>
+<rect y="520" width="1600" height="480" fill="#F4D9A6"/>
+<g transform="translate(420 520)"><path d="M0 0 L-10 -300" stroke="#55657A" stroke-width="12"/><path d="M-10 -300 q-200 40 -260 150 h520 q-60 -110 -260 -150z" fill="#F47B20"/><path d="M-10 -300 q-80 40 -100 150 h200 q-20 -110 -100 -150z" fill="#fff"/></g>
+<g transform="translate(900 640)"><rect x="0" y="0" width="300" height="40" rx="12" fill="#0A4D8C"/><rect x="20" y="-90" width="40" height="100" rx="8" fill="#0A4D8C"/><rect x="0" y="40" width="16" height="70" fill="#0A4D8C"/><rect x="284" y="40" width="16" height="70" fill="#0A4D8C"/></g>
+<circle cx="1300" cy="760" r="46" fill="#fff" stroke="#F47B20" stroke-width="10"/>
+<g font-family="Inter,Arial,sans-serif"><rect x="40" y="910" width="760" height="56" rx="28" fill="rgba(6,40,77,.55)"/><text x="72" y="947" font-size="28" font-weight="700" fill="#fff">Foto de exemplo · as reais entram pela planilha</text></g></svg>

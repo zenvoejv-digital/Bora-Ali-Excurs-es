@@ -36,7 +36,7 @@ Use **Implantar › Gerenciar implantações › editar (lápis) › Versão: No
 
 - **Valor de cada passageiro:** a última coluna da aba Reservas mostra quanto cada um paga (crianças isentas aparecem com 0). O *Total da reserva*, na linha do contratante, já soma tudo.
 - **Reservas:** quando o cliente pagar o sinal, mude o *Status* para **Sinal pago**. Se cancelar, use **Cancelada**: a vaga volta para o site.
-- **Agenda:** cada linha é uma viagem. Coluna `vagas` = total de lugares (vazio = não controla). Coluna `ativo` = escreva **não** para esconder a viagem. O `id` não deve mudar depois que já houver reservas. As categorias aceitas são `fds`, `praia`, `parques`, `natureza` e `passeios`.
+- **Agenda:** cada linha é uma viagem. Veja a seção *Agenda do site (editada pelos gestores)* abaixo.
 - **Buscar uma reserva (quando o cliente mandar o código):**
   - **Aba Buscar** (a primeira da planilha): digite na célula laranja o **código** (ex.: `BA-K3F9Q2`), parte do **nome**, o **CPF** (com ou sem pontos) ou o **telefone**, e aperte Enter. Todos os passageiros daquela reserva aparecem embaixo, na hora.
   - **Menu Bora Ali › Buscar reserva:** abre uma janela com o resumo da reserva (status, passageiros, pagamento, sinal e telefone) e já deixa as linhas selecionadas na aba Reservas, prontas para mudar o status.
@@ -51,6 +51,35 @@ Use **Implantar › Gerenciar implantações › editar (lápis) › Versão: No
   - **Menu Bora Ali › Atualizar o painel sozinho todo dia:** liga a atualização automática da aba Clientes, todo dia por volta das 6h.
 - **Menu Bora Ali › Gerar lista de embarque:** escolha a viagem e é criada uma aba com todos os passageiros, organizada por cidade de embarque e com a contagem por cidade, pronta para imprimir.
 - **Menu Bora Ali › Mensagens pós-viagem:** cria uma aba com um botão "Abrir WhatsApp" para cada cliente, com a mensagem de agradecimento e o link de avaliação.
+
+## Agenda do site (editada pelos gestores)
+
+Tudo o que aparece nos cards do site sai da aba **Agenda**. Mudou na planilha, o site já mostra assim que a página for aberta ou recarregada.
+
+| Coluna | O que colocar |
+|---|---|
+| `data`, `dia`, `destino`, `obs`, `selo` | Textos do card (ex.: `02/01`, `Sábado`, `Ilhabela`, `Bate e volta`, `Carnaval`). |
+| `categoria` | Lista de escolha: `fds`, `praia`, `parques`, `natureza` ou `passeios`. |
+| `valor` | Preço por pessoa (ex.: `199,99`). |
+| `vagas` | Total de lugares no ônibus (ex.: `46`). Vazio = não controla vagas. |
+| `ativo` | `sim` mostra no site, `não` esconde (a linha fica cinza). |
+| `local` | Onde fica o passeio (ex.: `Ilhabela - SP`). Aparece no card e na reserva. |
+| `embarques` | Pontos de embarque **só desta viagem**, separados por `;` (ex.: `Salto · Rodoviária; Itu · Tenda`). Vazio = todos os pontos de sempre. |
+| `criança grátis até (idade)` | Até essa idade não paga (no colo). Vazio = regra geral (até 4 anos). |
+| `valores de criança` | Faixas com preço ou desconto, separadas por `;`. Ex.: `5 a 8 = 50%; 9 a 11 = 199,99`. Quem fica fora das faixas paga o valor normal. |
+| `aviso de criança` | Texto extra na reserva (ex.: *Criança acima de 1 metro paga o ingresso*). |
+| `foto 1` … `foto 5` | Até 5 fotos. A `foto 1` vira a capa do card; clicando, o cliente vê todas em tela cheia. |
+| `descrição` | O que está incluso, horários, dicas. Aparece junto das fotos e na reserva. |
+| `reservadas`, `restantes` | **Calculadas sozinhas** (não digite). A linha fica laranja com até 10 vagas e vermelha quando esgota. |
+
+**Fotos, do jeito fácil:** menu **Bora Ali › Agenda do site › Enviar fotos de uma viagem**. Escolha a viagem e as fotos (do computador ou do celular). Elas são reduzidas sozinhas, guardadas na pasta *Bora Ali - Fotos do site* do Drive e os links entram nas colunas. Marque *Trocar as fotos atuais* para substituir.
+Também dá para colar na coluna o link de uma foto do Google Drive compartilhada como **"Qualquer pessoa com o link"**, ou um link direto de imagem (`https://...`). Foto que não abrir some do card e volta a ilustração.
+
+**Nova viagem:** preencha `data` e `destino` numa linha vazia. O `id`, o `mes` e o `ativo = sim` se preenchem sozinhos. Para repetir um destino em outra data, use **Agenda do site › Duplicar viagem** (copia valor, local, fotos e regras de criança).
+
+> Não mude o `id` de uma viagem que já tem reservas: é ele que liga as reservas à viagem.
+
+**Já tinha a planilha antes?** Cole o código novo e rode **Bora Ali › Agenda do site › Arrumar a aba Agenda** uma vez. Ele cria as colunas novas no fim (sem mexer nas suas), as listas de escolha e as contas de vagas. Depois, publique uma **nova versão** do App da Web (veja *Se mudar o código do script depois*).
 
 ## Privacidade (LGPD)
 

@@ -286,3 +286,35 @@ html,body{overflow-x:clip}
 .hero-art .hero-logo-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 18px 30px rgba(6,40,77,.35));animation:lgEntra 1.4s cubic-bezier(.2,.8,.2,1) both, lgFlutua 6s ease-in-out 1.4s infinite}
 @keyframes lgFlutua{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(1.5deg)}}
 @media (prefers-reduced-motion: reduce){.hero-art .hero-logo-img{animation:none}}
+/* fotos da viagem: capa do card e galeria (até 5 fotos, vindas da planilha) */
+.card-foto{all:unset;position:absolute;inset:0;cursor:zoom-in;display:block}
+.card-foto:focus-visible{outline:3px solid #F47B20;outline-offset:-3px}
+.card-foto img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.card:hover .card-foto img{transform:scale(1.04)}
+.card-topo.tem-foto::after{content:"";position:absolute;inset:0 0 auto 0;height:64px;background:linear-gradient(180deg,rgba(6,40,77,.35),rgba(6,40,77,0));pointer-events:none}
+.card-topo > div{z-index:1}
+.card-foto-n{position:absolute;right:10px;bottom:10px;z-index:1;display:inline-flex;align-items:center;gap:5px;background:rgba(6,40,77,.72);color:#fff;font-size:13px;font-weight:700;padding:5px 9px;border-radius:999px;pointer-events:none}
+.galeria{font-family:'Inter',system-ui,sans-serif;position:fixed;inset:0;z-index:80;background:rgba(4,24,48,.86);display:flex;align-items:center;justify-content:center;padding:clamp(10px,3vw,32px)}
+.galeria[hidden]{display:none}
+.gl-box{background:#fff;color:#0F1B2D;border-radius:24px;width:min(980px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px;padding:clamp(14px,2.4vw,24px);box-sizing:border-box}
+.gl-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.gl-top h3{font-family:'Poppins',sans-serif;margin:0;font-size:clamp(20px,2.4vw,26px);color:#0A4D8C}
+.gl-top p{margin:2px 0 0;font-size:14px;color:#55657A}
+.gl-fechar{flex:none;width:44px;height:44px;border-radius:50%;border:none;background:#EEF5FC;color:#0A4D8C;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.gl-palco{position:relative;border-radius:16px;overflow:hidden;background:#06284D;aspect-ratio:16/10;touch-action:pan-y}
+.gl-palco > img{width:100%;height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
+.gl-seta{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.92);color:#0A4D8C;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.gl-seta[hidden]{display:none}
+.gl-ant{left:12px}.gl-prox{right:12px}
+#gl-cont{position:absolute;right:12px;top:12px;background:rgba(6,40,77,.75);color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px}
+#gl-cont:empty{display:none}
+.gl-mini{display:flex;gap:8px;overflow-x:auto}
+.gl-mini:empty{display:none}
+.gl-mini button{flex:none;width:84px;height:60px;padding:0;border:3px solid transparent;border-radius:10px;overflow:hidden;cursor:pointer;background:#EEF5FC}
+.gl-mini button[aria-current="true"]{border-color:#F47B20}
+.gl-mini img{width:100%;height:100%;object-fit:cover;display:block}
+#gl-desc{margin:0;font-size:15px;line-height:1.55;color:#33445A}
+.gl-acoes{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #E4EDF6;padding-top:14px}
+#gl-preco{font-family:'Poppins',sans-serif;font-weight:700;font-size:22px;color:#0A4D8C}
+#gl-reservar{font-family:inherit;border:none;cursor:pointer;background:#F47B20;color:#06284D;font-weight:700;font-size:16px;padding:12px 24px;border-radius:999px;min-height:48px}
+@media (prefers-reduced-motion: reduce){.card-foto img{transition:none}.card:hover .card-foto img{transform:none}}
