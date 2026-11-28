@@ -17,6 +17,7 @@ Feito só com HTML, CSS e JavaScript, sem build e sem dependências. Pronto para
 index.html              página principal
 404.html                página de "não encontrado"
 vercel.json             configuração da Vercel (URLs limpas, cache, cabeçalhos)
+_headers                mesma configuração, para o Cloudflare Pages
 robots.txt
 favicon.ico
 apple-touch-icon.png
@@ -62,6 +63,15 @@ As categorias aceitas são `fds`, `praia`, `parques`, `natureza` e `passeios`. E
 3. Aguarde a propagação. A Vercel emite o HTTPS automaticamente.
 
 Depois de ter o domínio, vale trocar no `index.html` o `og:image` para o endereço completo (ex.: `https://boraaliexcursoes.com.br/assets/img/og-image.jpg`), para a imagem aparecer certinho quando o link for compartilhado no WhatsApp.
+
+## Publicar no Cloudflare Pages (alternativa)
+
+O site funciona igual no Cloudflare Pages: o arquivo `_headers` faz o papel do `vercel.json`, a `404.html` é usada sozinha e os links sem `.html` funcionam por padrão.
+
+1. No painel da Cloudflare, abra **Workers & Pages › Create › Pages › Connect to Git** e escolha este repositório.
+2. **Framework preset:** `None`. **Build command:** deixe vazio. **Build output directory:** `/`.
+3. Clique em **Save and Deploy**. Cada `git push` na `main` publica de novo.
+4. Para o domínio próprio, abra **Custom domains** no projeto e siga as instruções de DNS que aparecem.
 
 ## Modo demonstração
 
